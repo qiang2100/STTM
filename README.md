@@ -17,6 +17,6 @@ Table of Contents
 
 ## Algorithms
 
-* Short text topic models: [DMM](http://dbgroup.cs.tsinghua.edu.cn/wangjy/papers/KDD14-GSDMM.pdf) in KDD2014, [BTM](), [WNTM](), [PTM] (), [SATM] (),  [ETM] (), [GPU-DMM](), [GPU-PDMM] () and [LF-DMM] ().
+* Short text topic models: [DMM](http://dbgroup.cs.tsinghua.edu.cn/wangjy/papers/KDD14-GSDMM.pdf) in conference KDD2014, [BTM](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.402.4032&rep=rep1&type=pdf) in journal TKDE2016, [WNTM](https://arxiv.org/abs/1412.5404) in journal KAIS2018, [PTM] (http://www.kdd.org/kdd2016/papers/files/rpp1190-zuoA.pdf) in conference KDD2016, [SATM] (https://ijcai.org/Proceedings/15/Papers/321.pdf) in conference IJCAI2015,  [ETM] (https://arxiv.org/abs/1609.08496) in conference PAKDD2017, [GPU-DMM](https://dl.acm.org/citation.cfm?id=2911499) in conference SIGIR2016, [GPU-PDMM](https://www.researchgate.net/profile/Aixin_Sun/publication/319277811_Enhancing_Topic_Modeling_for_Short_Texts_with_Auxiliary_Word_Embeddings/links/59daddef0f7e9b12b36d90b4/Enhancing-Topic-Modeling-for-Short-Texts-with-Auxiliary-Word-Embeddings.pdf) in journal TIS2017 and [LF-DMM] (http://aclweb.org/anthology/Q15-1022) in journal TACL2015.
 
-* Long text topic models: [LDA]() and [LF-LDA]().
+* Long text topic models: [LDA]() and [LF-LDA](http://aclweb.org/anthology/Q15-1022) in journal TACL2015.
