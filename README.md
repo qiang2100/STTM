@@ -3,7 +3,7 @@ This is a Java based open-source library for short text topic modeling algorithm
 
 STTM is maintained by [Jipeng Qiang](https://github.com/qiang2100/) (Yangzhou, China).
 
-<center style="padding: 40px"><img width="70%" src="http://opennmt.github.io/simple-attn.png" /></center>
+<center style="padding: 40px"><img width="70%" src="https://github.com/qiang2100/STTM/blob/master/Architecture.png" /></center>
 
 
 Table of Contents
