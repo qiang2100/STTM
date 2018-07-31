@@ -9,9 +9,14 @@ STTM is maintained by [Jipeng Qiang](https://github.com/qiang2100/) (Yangzhou, C
 Table of Contents
 =================
   * [Full Documentation](http://opennmt.net/OpenNMT-py/)
-  * [Requirements](#requirements)
-  * [Features](#features)
+  * [Algorithms](#algorithms)
+  * [Datasets](#datasets)
+  * [Evaluation](#evaluation)
   * [Quickstart](#quickstart)
   * [Citation](#citation)
 
+## Algorithms
 
+* Short text topic models: [DMM](http://dbgroup.cs.tsinghua.edu.cn/wangjy/papers/KDD14-GSDMM.pdf) in KDD2014, [BTM](), [WNTM](), [PTM] (), [SATM] (),  [ETM] (), [GPU-DMM](), [GPU-PDMM] () and [LF-DMM] ().
+
+* Long text topic models: [LDA]() and [LF-LDA]().
