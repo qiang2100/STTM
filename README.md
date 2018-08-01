@@ -27,12 +27,12 @@ We provided the following short text datasets for evaluation. The summary statis
 * SearchSnippets: This dataset was selected from the results of web search
 transaction using predefined phrases of 8 different domains.
 
-*StackOverflow: This is the challenge data published in Kaggle.com. The
+* StackOverflow: This is the challenge data published in Kaggle.com. The
 raw dataset consists 3,370,528 samples through July 31st, 2012 to August 14,
 2012. Here, the dataset randomly select 20,000 question titles from 20
 different tags.
 
-*Biomedical. Biomedical use the challenge data published in BioASQ's official website.
+* Biomedical. Biomedical use the challenge data published in BioASQ's official website.
 
 ## Evaluation
 
