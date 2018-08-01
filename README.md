@@ -43,7 +43,8 @@ words to identify co-occurrence, we computed the PMI of all a given word pair. T
 
 * Cluster Evaluation (Purity and NMI): By choosing the maximum of topic probability for each text, we can get the cluster label for each text. Then, we can compare the cluster label and the golden label using metric Purity and NMI.
 
-* Classification Evaluation:
+* Classification Evaluation: With topic modeling, we can represent each document with its topic distribution p(z|d). Hence, the quality of the topics can be assessed by the accuracy of text classification using topic-level representation, as an indirect evaluation. A better classification accuracy means the learned topics
+are more discriminative and representative. Here, we employ a linear kernel Support Vector Machine (SVM) classifier in [LIBLINEAR](https://liblinear.bwaldvogel.de/) with default parameter settings. The classification accuracy is computed through fivefold cross-validation on both datasets.
 
 ## Quickstart
 
