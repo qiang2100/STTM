@@ -23,12 +23,20 @@ Table of Contents
 
 ## Datasets
 
-We provided the following short text datasets for evaluation. The summary statistics and semantic topics of these datasets (SearchSnippets, StackOverflow and Biomedical) are described in the [paper](https://arxiv.org/pdf/1701.00185.pdf).
+We provided the following five short text datasets for evaluation. The summary statistics and semantic topics of these datasets (SearchSnippets, StackOverflow and Biomedical) are described in the [paper](https://arxiv.org/pdf/1701.00185.pdf). The statistics of the two datasets (Tweet and GoogleNews) are described in the "DMM" paper.
 * SearchSnippets: This dataset was selected from the results of web search transaction using predefined phrases of 8 different domains.
 
 * StackOverflow: This is the challenge data published in Kaggle.com. The raw dataset consists 3,370,528 samples through July 31st, 2012 to August 14, 2012. Here, the dataset randomly select 20,000 question titles from 20 different tags.
 
 * Biomedical. Biomedical use the challenge data published in BioASQ's official website.
+
+* Tweet: In the 2011 and 2012 microblog tracks at Text REtrieval Conference (TREC)2 , totally 109 queries were used. Using
+a standard polling strategy, the NIST assessors evaluated the tweets submitted for each query by the participants into:
+spam, not relevant, relevant, and highly-relevant. We regard the queries as clusters and the highly-relevant tweets of each
+query as documents in each cluster. After removing the queries with none highly-relevant tweets, we constructed a
+dataset with 89 clusters and totally 2,472 tweets.
+
+* GoogleNews: In the Google News, the news articles are grouped into clusters (stories) automatically. We took a snapshot of the Google News on November 27, 2013, and crawled the titles and snippets of 11,109 news articles belonging to 152 clusters.
 
 ## Evaluation
 
