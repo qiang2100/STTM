@@ -116,13 +116,13 @@ The output files are saved in the "results" folder containing `corpusBTM.theta`,
 
 The above commands will produce the clustering scores for the ".theta" file for each model  in the `dataset` folder, separately. The following command
 
-	$ java -jar jar/jLDADMM.jar -model ClusteringEval -label dataset/corpus.LABEL -dir results -prob theta
+	$ java -jar jar/STTM.jar -model ClusteringEval -label dataset/corpus.LABEL -dir results -prob theta
 
 will produce the clustering scores for all document-to-topic distribution files with their names ending in `theta`.
 
 Similarly, we perform
-    $ java -jar jar/jLDADMM.jar -model CoherenceEval -label dataset/Wikipedia -dir results -topWords topWords
-    $ java -jar jar/jLDADMM.jar -model ClassificationEval -label dataset/corpus.LABEL -dir results -prob theta
+    $ java -jar jar/STTM.jar -model CoherenceEval -label dataset/Wikipedia -dir results -topWords topWords
+    $ java -jar jar/STTM.jar -model ClassificationEval -label dataset/corpus.LABEL -dir results -prob theta
 
 
 ### Step 3: Topic inference on new/unseen corpus
