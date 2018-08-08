@@ -8,7 +8,7 @@ STTM is maintained by [Jipeng Qiang](https://github.com/qiang2100/) (Yangzhou, C
 
 Table of Contents
 =================
-  * [Full Documentation](http://opennmt.net/OpenNMT-py/)
+  * [Full Documentation](https://arxiv.org/abs/1808.02215)
   * [Algorithms](#algorithms)
   * [Datasets](#datasets)
   * [Evaluation](#evaluation)
@@ -46,5 +46,12 @@ are more discriminative and representative. Here, we employ a linear kernel Supp
 
 ## Citation
 
-[STTM technical report](https://doi.org/10.18653/v1/P17-4012)
+[STTM technical report](https://arxiv.org/abs/1808.02215)
+
+@article{qiang2018STTP,
+  title={STTM: A Tool for Short Text Topic Modeling },
+  author={Qiang, Jipeng and Li, Yun and Yuan, Yunhao and Liu, Wei and Wu, Xindong},
+  journal={arXiv preprint arXiv:1808.02215},
+  year={2018}
+}
 
