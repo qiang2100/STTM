@@ -55,7 +55,8 @@ Users can find the pre-compiled file `STTM.jar` and source codes in folders `src
 	$ java [-Xmx1G] -jar jar/STTM.jar –model <LDA or BTM or PTM or SATM or DMM or WATM> -corpus <Input_corpus_file_path> [-ntopics <int>] [-alpha <double>] [-beta <double>] [-niters <int>] [-twords <int>] [-name <String>] [-sstep <int>]
 
 !!! note "Note"
-    If users train these models based word embeddings, users need to download the embeddings. In the tool, the code is based on [Global Vectors](https://nlp.stanford.edu/projects/glove/). 
+    If users train these models based word embeddings, users need to download the embeddings. In the tool, the code is based on [Global Vectors](https://nlp.stanford.edu/projects/glove/).
+
     $ java [-Xmx1G] -jar jar/STTM.jar –model <GPUDMM or GPU-PDMM or LFDMM or LFLDA> -corpus <Input_corpus_file_path> -vectors <Input_Word2vec_file_Path> [-ntopics <int>] [-alpha <double>] [-beta <double>] [-niters <int>] [-twords <int>] [-name <String>] [-sstep <int>]
 
 where parameters in [ ] are optional.
@@ -70,7 +71,7 @@ where parameters in [ ] are optional.
 
 `-alpha <double>`: Specify the hyper-parameter `alpha`. Following [6, 8], the default  `alpha` value is 0.1.
 
-`-beta <double>`: Specify the hyper-parameter `beta`. The default `beta` value is 0.01 which is a common setting in  literature [5]. Following [6], the users may consider to the `beta` value of 0.1 for short texts.
+`-beta <double>`: Specify the hyper-parameter `beta`. The default `beta` value is 0.01 which is a common setting in  literature. 
 
 `-niters <int>`: Specify the number of Gibbs sampling iterations. The default value is 2000.
 
@@ -86,10 +87,10 @@ where parameters in [ ] are optional.
 
 The output files are saved in the "results" folder containing `corpusBTM.theta`, `corpusBTM.phi`, `corpusBTM.topWords`, `corpusBTM.topicAssignments` and `corpusBTM.paras` referring to the document-to-topic distributions, topic-to-word distributions, top topical words, topic assignments and model parameters, respectively. 
 
-### Step 2: Evaluation the model using Clustering, Coherence or Classification
+### Step 2: Evaluation the inferring models using Clustering, Coherence or Classification
 
 
-**** For clustering, we treat each topic as a cluster, and we assign every document the topic with the highest probability given the document. To get the Purity and NMI clustering scores, we perform:
+#### For clustering, we treat each topic as a cluster, and we assign every document the topic with the highest probability given the document. To get the Purity and NMI clustering scores, we perform:
 
 	$ java –jar jar/STTM.jar –model ClusteringEval –label <Golden_label_file_path> -dir <Directory_path> -prob <Document-topic-prob/Suffix>
 
@@ -103,13 +104,13 @@ The output files are saved in the "results" folder containing `corpusBTM.theta`,
 
 	$ java -jar jar/STMM.jar -model ClusteringEval -label dataset/corpus.LABEL -dir results -prob corpusBTM.theta
 
-**** For coherence, we perform:
+#### For coherence, we perform:
 	$ java –jar jar/STTM.jar –model CoherenceEval –label <Golden_label_file_path> -dir <Directory_path> -topWords <Document-TopWord/Suffix>
 
 `–label`: Specify the path to the Wikipedia file. How to obtain Wikipedia file, please check the above section "Evaluation".
 `–topword`: Specify the path to the top words file, e.g., `corpusBTM.topWords`.
 
-**** For classification, we perform:
+#### For classification, we perform:
 	$ java –jar jar/STTM.jar –model ClassificationEval –label <Golden_label_file_path> -dir <Directory_path> -prob <Document-topic-prob/Suffix>
 
 
@@ -124,7 +125,7 @@ Similarly, we perform
     $ java -jar jar/jLDADMM.jar -model ClassificationEval -label dataset/corpus.LABEL -dir results -prob theta
 
 
-*** Topic inference on new/unseen corpus
+### Step 3: Topic inference on new/unseen corpus
 
 To infer topics on a new/unseen corpus using a pre-trained LDA or DMM or LFDMM or LFLDA topic model, we perform:
 
@@ -135,6 +136,7 @@ To infer topics on a new/unseen corpus using a pre-trained LDA or DMM or LFDMM o
 <b>Examples:</b>
 
 `$ java -jar jar/STTM.jar -model LDAinf -paras results/corpusLDA.paras -corpus dataset/unseenTest.txt -niters 100 -name LDAinf`
+
 
 
 
