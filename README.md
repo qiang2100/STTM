@@ -48,10 +48,16 @@ are more discriminative and representative. Here, we employ a linear kernel Supp
 
 [STTM technical report](https://arxiv.org/abs/1808.02215)
 
+```
 @article{qiang2018STTP,
-  title={STTM: A Tool for Short Text Topic Modeling },
-  author={Qiang, Jipeng and Li, Yun and Yuan, Yunhao and Liu, Wei and Wu, Xindong},
-  journal={arXiv preprint arXiv:1808.02215},
-  year={2018}
+  title =  {STTM: A Tool for Short Text Topic Modeling },
+  author = {Qiang, Jipeng and 
+            Li, Yun and 
+            Yuan, Yunhao and 
+            Liu, Wei and 
+            Wu, Xindong},
+  journal = {arXiv preprint arXiv:1808.02215},
+  year  =  {2018}
 }
+```
 
