@@ -23,7 +23,7 @@ Table of Contents
 
 ## Datasets
 
-We provided the following five short text datasets for evaluation. The summary statistics and semantic topics of these datasets (SearchSnippets, StackOverflow and Biomedical) are described in the [paper](https://arxiv.org/pdf/1701.00185.pdf). The statistics of the two datasets (Tweet and GoogleNews) are described in the "DMM" paper.
+We provided the following six short text datasets for evaluation. The summary statistics and semantic topics of these datasets (SearchSnippets, StackOverflow and Biomedical) are described in the [paper](https://arxiv.org/pdf/1701.00185.pdf). The statistics of the two datasets (Tweet and GoogleNews) are described in the "DMM" paper.
 * SearchSnippets: This dataset was selected from the results of web search transaction using predefined phrases of 8 different domains.
 
 * StackOverflow: This is the challenge data published in Kaggle.com. The raw dataset consists 3,370,528 samples through July 31st, 2012 to August 14, 2012. Here, the dataset randomly select 20,000 question titles from 20 different tags.
@@ -37,6 +37,9 @@ query as documents in each cluster. After removing the queries with none highly-
 dataset with 89 clusters and totally 2,472 tweets.
 
 * GoogleNews: In the Google News, the news articles are grouped into clusters (stories) automatically. We took a snapshot of the Google News on November 27, 2013, and crawled the titles and snippets of 11,109 news articles belonging to 152 clusters.
+
+* Pascal_Flickr: The Pascal Captions dataset are sets of captions solicited from Mechanical Turkers for photographs from Flickr and from the Pattern Analysis, Statistical Modeling, and Computational Learning (PASCAL) Visual Object Classes
+Challenge (Everingham et al., 2010). PAS includes twenty categories of images and 4834 captions. Each category has fifty images with approximately five captions for each image. We use the category as the gold standard cluster.
 
 ## Evaluation
 
