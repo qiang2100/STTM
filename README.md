@@ -55,7 +55,7 @@ Users can find the pre-compiled file `STTM.jar` and source codes in folders `src
 	$ java [-Xmx1G] -jar jar/STTM.jar –model <LDA or BTM or PTM or SATM or DMM or WATM> -corpus <Input_corpus_file_path> [-ntopics <int>] [-alpha <double>] [-beta <double>] [-niters <int>] [-twords <int>] [-name <String>] [-sstep <int>]
 
 !!! note "Note"
-    If users train these models based word embeddings, users need to download the embeddings. In the tool, the code is based on [Global Vectors](https://nlp.stanford.edu/projects/glove/).
+    If users train these models based word embeddings, users need to download the Pre-trained word embeddings. In the package, the code is based on [Global Vectors](https://nlp.stanford.edu/projects/glove/).
 
     $ java [-Xmx1G] -jar jar/STTM.jar –model <GPUDMM or GPU-PDMM or LFDMM or LFLDA> -corpus <Input_corpus_file_path> -vectors <Input_Word2vec_file_Path> [-ntopics <int>] [-alpha <double>] [-beta <double>] [-niters <int>] [-twords <int>] [-name <String>] [-sstep <int>]
 
@@ -105,7 +105,7 @@ The output files are saved in the "results" folder containing `corpusBTM.theta`,
 	$ java -jar jar/STMM.jar -model ClusteringEval -label dataset/corpus.LABEL -dir results -prob corpusBTM.theta
 
 #### For coherence, we perform:
-	$ java –jar jar/STTM.jar –model CoherenceEval –label <Golden_label_file_path> -dir <Directory_path> -topWords <Document-TopWord/Suffix>
+	$ java –jar jar/STTM.jar –model CoherenceEval –label <Wikipedia_file_path> -dir <Directory_path> -topWords <Document-TopWord/Suffix>
 
 `–label`: Specify the path to the Wikipedia file. How to obtain Wikipedia file, please check the above section "Evaluation".
 `–topword`: Specify the path to the top words file, e.g., `corpusBTM.topWords`.
