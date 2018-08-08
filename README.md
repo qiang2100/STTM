@@ -44,6 +44,100 @@ are more discriminative and representative. Here, we employ a linear kernel Supp
 
 ## Quickstart
 
+### Step 1: Infer latent topics from the corpus
+
+Users can find the pre-compiled file `STTM.jar` and source codes in folders `src`, respectively. The users can recompile the source codes by Exclipse or IDEA.
+
+**File format of input corpus:**  Similar to file `corpus.txt`  in the `dataset` folder, STTM assumes that each line in the input corpus represents a document. Here, a document is a sequence of words/tokens separated by white space characters. The users should preprocess the input corpus before training the short text topic models, for example: down-casing, removing non-alphabetic characters and stop-words, removing words shorter than 3 characters and words appearing less than a certain times.  
+
+**Now, we can train the algorithms in STTM tool by executing:**
+
+	$ java [-Xmx1G] -jar jar/STTM.jar –model <LDA or BTM or PTM or SATM or DMM or WATM> -corpus <Input_corpus_file_path> [-ntopics <int>] [-alpha <double>] [-beta <double>] [-niters <int>] [-twords <int>] [-name <String>] [-sstep <int>]
+
+!!! note "Note"
+    If users train these models based word embeddings, users need to download the embeddings. In the tool, the code is based on [Global Vectors](https://nlp.stanford.edu/projects/glove/). 
+    $ java [-Xmx1G] -jar jar/STTM.jar –model <GPUDMM or GPU-PDMM or LFDMM or LFLDA> -corpus <Input_corpus_file_path> -vectors <Input_Word2vec_file_Path> [-ntopics <int>] [-alpha <double>] [-beta <double>] [-niters <int>] [-twords <int>] [-name <String>] [-sstep <int>]
+
+where parameters in [ ] are optional.
+
+`-model`: Specify the topic model LDA or DMM
+
+`-corpus`: Specify the path to the input corpus file.
+
+`-vectors`: Specify the path to the word2vec file.
+
+`-ntopics <int>`: Specify the number of topics. The default value is 20.
+
+`-alpha <double>`: Specify the hyper-parameter `alpha`. Following [6, 8], the default  `alpha` value is 0.1.
+
+`-beta <double>`: Specify the hyper-parameter `beta`. The default `beta` value is 0.01 which is a common setting in  literature [5]. Following [6], the users may consider to the `beta` value of 0.1 for short texts.
+
+`-niters <int>`: Specify the number of Gibbs sampling iterations. The default value is 2000.
+
+`-twords <int>`: Specify the number of the most probable topical words. The default value is 20.
+
+`-name <String>`: Specify a name to the topic modeling experiment. The default value is `model`.
+
+`-sstep <int>`: Specify a step to save the sampling outputs. The default value is 0 (i.e. only saving the output from the last sample).
+
+**Examples:**
+
+	$ java -jar jar/STTM.jar -model BTM -corpus dataset/corpus.txt -name corpusBTM
+
+The output files are saved in the "results" folder containing `corpusBTM.theta`, `corpusBTM.phi`, `corpusBTM.topWords`, `corpusBTM.topicAssignments` and `corpusBTM.paras` referring to the document-to-topic distributions, topic-to-word distributions, top topical words, topic assignments and model parameters, respectively. 
+
+### Step 2: Evaluation the model using Clustering, Coherence or Classification
+
+
+**** For clustering, we treat each topic as a cluster, and we assign every document the topic with the highest probability given the document. To get the Purity and NMI clustering scores, we perform:
+
+	$ java –jar jar/STTM.jar –model ClusteringEval –label <Golden_label_file_path> -dir <Directory_path> -prob <Document-topic-prob/Suffix>
+
+`–label`: Specify the path to the ground truth label file. Each line in this label file contains the golden label of the corresponding document in the input corpus. See files `corpus.LABEL` and `corpus.txt` in the `dataset` folder.
+
+`-dir`: Specify the path to the directory containing document-to-topic distribution files.
+
+`-prob`: Specify a document-to-topic distribution file OR a group of document-to-topic distribution files in the specified directory.
+
+**Examples:**
+
+	$ java -jar jar/STMM.jar -model ClusteringEval -label dataset/corpus.LABEL -dir results -prob corpusBTM.theta
+
+**** For coherence, we perform:
+	$ java –jar jar/STTM.jar –model CoherenceEval –label <Golden_label_file_path> -dir <Directory_path> -topWords <Document-TopWord/Suffix>
+
+`–label`: Specify the path to the Wikipedia file. How to obtain Wikipedia file, please check the above section "Evaluation".
+`–topword`: Specify the path to the top words file, e.g., `corpusBTM.topWords`.
+
+**** For classification, we perform:
+	$ java –jar jar/STTM.jar –model ClassificationEval –label <Golden_label_file_path> -dir <Directory_path> -prob <Document-topic-prob/Suffix>
+
+
+The above commands will produce the clustering scores for the ".theta" file for each model  in the `dataset` folder, separately. The following command
+
+	$ java -jar jar/jLDADMM.jar -model ClusteringEval -label dataset/corpus.LABEL -dir results -prob theta
+
+will produce the clustering scores for all document-to-topic distribution files with their names ending in `theta`.
+
+Similarly, we perform
+    $ java -jar jar/jLDADMM.jar -model CoherenceEval -label dataset/Wikipedia -dir results -topWords topWords
+    $ java -jar jar/jLDADMM.jar -model ClassificationEval -label dataset/corpus.LABEL -dir results -prob theta
+
+
+*** Topic inference on new/unseen corpus
+
+To infer topics on a new/unseen corpus using a pre-trained LDA or DMM or LFDMM or LFLDA topic model, we perform:
+
+`$ java -jar jar/STTM.jar -model <LDA_inf or DMM_inf or LFLDA_inf or LFDMM_inf> -paras <Hyperparameter_file_path> -corpus <Unseen_corpus_file_path> [-niters <int>] [-twords <int>] [-name <String>] [-sstep <int>]`
+
+* `-paras`: Specify the path to the hyper-parameter file produced by the pre-trained LDA/DMM topic model.
+
+<b>Examples:</b>
+
+`$ java -jar jar/STTM.jar -model LDAinf -paras results/corpusLDA.paras -corpus dataset/unseenTest.txt -niters 100 -name LDAinf`
+
+
+
 ## Citation
 
 [STTM technical report](https://arxiv.org/abs/1808.02215)
