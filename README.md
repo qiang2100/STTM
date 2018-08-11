@@ -14,13 +14,15 @@ Table of Contents
   * [Evaluation](#evaluation)
   * [Quickstart](#quickstart)
   * [Citation](#citation)
+  
 
 ## Algorithms
 
-* Short text topic models: Dirichlet Multinomial Mixture ([DMM](http://dbgroup.cs.tsinghua.edu.cn/wangjy/papers/KDD14-GSDMM.pdf)) in conference KDD2014, Biterm Topic Model ([BTM](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.402.4032&rep=rep1&type=pdf)) in journal TKDE2016, Word Network Topic Model ([WNTM](https://arxiv.org/abs/1412.5404) ) in journal KAIS2018, Pseudo-Document-Based Topic Model ([PTM](http://www.kdd.org/kdd2016/papers/files/rpp1190-zuoA.pdf)) in conference KDD2016, Self-Aggregation-Based Topic Model ([SATM](https://ijcai.org/Proceedings/15/Papers/321.pdf)) in conference IJCAI2015, ([ETM](https://arxiv.org/abs/1609.08496)) in conference PAKDD2017, Generalized P´olya Urn (GPU) based Dirichlet Multinomial Mixturemodel ([GPU-DMM](https://dl.acm.org/citation.cfm?id=2911499)) in conference SIGIR2016, Generalized P´olya Urn (GPU) based Poisson-based Dirichlet Multinomial Mixturemodel ([GPU-PDMM](https://www.researchgate.net/profile/Aixin_Sun/publication/319277811_Enhancing_Topic_Modeling_for_Short_Texts_with_Auxiliary_Word_Embeddings/links/59daddef0f7e9b12b36d90b4/Enhancing-Topic-Modeling-for-Short-Texts-with-Auxiliary-Word-Embeddings.pdf)) in journal TIS2017 and Latent Feature Model with DMM ([LF-DMM](http://aclweb.org/anthology/Q15-1022)) in journal TACL2015.
+* Short text topic models: Dirichlet Multinomial Mixture ([DMM](http://dbgroup.cs.tsinghua.edu.cn/wangjy/papers/KDD14-GSDMM.pdf)) in conference KDD2014, Biterm Topic Model ([BTM](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.402.4032&rep=rep1&type=pdf)) in journal TKDE2016, Word Network Topic Model ([WNTM](https://arxiv.org/abs/1412.5404) ) in journal KAIS2018, Pseudo-Document-Based Topic Model ([PTM](http://www.kdd.org/kdd2016/papers/files/rpp1190-zuoA.pdf)) in conference KDD2016, Self-Aggregation-Based Topic Model ([SATM](https://ijcai.org/Proceedings/15/Papers/321.pdf)) in conference IJCAI2015, ([ETM](https://arxiv.org/abs/1609.08496)) in conference PAKDD2017, Generalized P´olya Urn (GPU) based Dirichlet Multinomial Mixturemodel ([GPU-DMM](https://dl.acm.org/citation.cfm?id=2911499)) in conference SIGIR2016, Generalized P´olya Urn (GPU) based Poisson-based Dirichlet Multinomial Mixturemodel ([GPU-PDMM](https://www.researchgate.net/profile/Aixin_Sun/publication/319277811_Enhancing_Topic_Modeling_for_Short_Texts_with_Auxiliary_Word_Embeddings/links/59daddef0f7e9b12b36d90b4/Enhancing-Topic-Modeling-for-Short-Texts-with-Auxiliary-Word-Embeddings.pdf)) in journal TIS2017 and Latent Feature Model with DMM ([LF-DMM](http://aclweb.org/anthology/Q15-1022)) in journal TACL2015. 
 
 * Long text topic models: Latent Dirichlet Allocation ([LDA]()) and Latent Feature Model with LDA ([LF-LDA](http://aclweb.org/anthology/Q15-1022)) in journal TACL2015.
 
+Here, DMM and LDA are from jLDADMM package (https://github.com/datquocnguyen/jLDADMM). LF-DMM and LF-LDA are from https://github.com/datquocnguyen/LFTM.
 ## Datasets
 
 We provided the following six short text datasets for evaluation. The summary statistics and semantic topics of these datasets (SearchSnippets, StackOverflow and Biomedical) are described in the [paper](https://arxiv.org/pdf/1701.00185.pdf). The statistics of the two datasets (Tweet and GoogleNews) are described in the "DMM" paper.
@@ -167,4 +169,7 @@ To infer topics on a new/unseen corpus using a pre-trained LDA or DMM or LFDMM o
   year  =  {2018}
 }
 ```
+
+
+
 
