@@ -22,7 +22,7 @@ Table of Contents
 
 * Long text topic models: Latent Dirichlet Allocation ([LDA]()) and Latent Feature Model with LDA ([LF-LDA](http://aclweb.org/anthology/Q15-1022)) in journal TACL2015.
 
-Here, DMM is from jLDADMM package (https://github.com/datquocnguyen/jLDADMM). LF-DMM and LF-LDA are from https://github.com/datquocnguyen/LFTM.
+Here, LF-DMM and LF-LDA are package LFTM from https://github.com/datquocnguyen/LFTM.
 ## Datasets
 
 We provided the following six short text datasets for evaluation. The summary statistics and semantic topics of these datasets (SearchSnippets, StackOverflow and Biomedical) are described in the [paper](https://arxiv.org/pdf/1701.00185.pdf). The statistics of the two datasets (Tweet and GoogleNews) are described in the "DMM" paper.
@@ -150,6 +150,7 @@ To infer topics on a new/unseen corpus using a pre-trained LDA or DMM or LFDMM o
 
 `$ java -jar jar/STTM.jar -model LDAinf -paras results/corpusLDA.paras -corpus dataset/unseenTest.txt -niters 100 -name LDAinf`
 
+Here, LDA_inf and DM_inf and LFLDA_inf and LFDMM_inf iare from jLDADMM package (https://github.com/datquocnguyen/jLDADMM) and LFTM.
 
 
 
