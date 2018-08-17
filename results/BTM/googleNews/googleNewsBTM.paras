@@ -1,0 +1,8 @@
+-model	BTM
+-corpus	dataset/GoogleNews.txt
+-ntopics	20
+-alpha	0.1
+-beta	0.01
+-niters	2000
+-twords	20
+-name	googleNewsBTM
