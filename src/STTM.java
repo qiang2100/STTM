@@ -31,7 +31,7 @@ public class STTM
 
 			if (cmdArgs.model.equals("LDA")) {
 				LDA lda = new LDA(cmdArgs.corpus,
-					cmdArgs.ntopics, 50.0/cmdArgs.ntopics, cmdArgs.beta,
+					cmdArgs.ntopics, cmdArgs.alpha, cmdArgs.beta,
 					cmdArgs.niters, cmdArgs.twords, cmdArgs.expModelName);
 				lda.inference();
 			}
