@@ -50,7 +50,7 @@ public class STTM
 			}
 			else if (cmdArgs.model.equals("WNTM")) {
 				WNTM wntm = new WNTM(cmdArgs.corpus,
-						cmdArgs.ntopics, 50.0/cmdArgs.ntopics, cmdArgs.beta,
+						cmdArgs.ntopics, cmdArgs.alpha, cmdArgs.beta,
 						cmdArgs.niters, cmdArgs.twords, cmdArgs.window, cmdArgs.expModelName,
 						cmdArgs.initTopicAssgns, cmdArgs.savestep);
 				wntm.inference();
