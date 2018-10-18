@@ -1,5 +1,5 @@
 # STTM: A Library of Short Text Topic Modeling
-This is a Java based open-source library for short text topic modeling algorithms. The library is designed to facilitate the development of short text topic modeling algorithms and make comparisons between the new models and existing ones available. STTM is open-sourced at [Here](https://github.com/qiang2100/STTM).
+This is a Java （Version=1.8） based open-source library for short text topic modeling algorithms. The library is designed to facilitate the development of short text topic modeling algorithms and make comparisons between the new models and existing ones available. STTM is open-sourced at [Here](https://github.com/qiang2100/STTM).
 
 STTM is maintained by [Jipeng Qiang](https://github.com/qiang2100/) (Yangzhou, China).
 
