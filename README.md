@@ -115,7 +115,7 @@ The output files are saved in the "results" folder containing `corpusBTM.theta`,
 
 **Examples:**
 
-	$ java -jar jar/STMM.jar -model ClusteringEval -label dataset/corpus.LABEL -dir results -prob corpusBTM.theta
+	$ java -jar jar/STTM.jar -model ClusteringEval -label dataset/corpus.LABEL -dir results -prob corpusBTM.theta
 
 #### For coherence, we perform:
 	$ java –jar jar/STTM.jar –model CoherenceEval –label <Wikipedia_file_path> -dir <Directory_path> -topWords <Document-TopWord/Suffix>
