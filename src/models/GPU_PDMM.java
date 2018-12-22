@@ -16,12 +16,11 @@ public class GPU_PDMM {
     public double alpha, beta, lambda;
     public int numIterations;
 
-    public double alphaSum; // alpha * numTopics
-    public double betaSum; // beta * vocabularySize
+
 
     public ArrayList<int[]> Corpus = new ArrayList<>(); // Word ID-based corpus
 
-    public int roundIndex;
+
     private Random rg;
     public double threshold;
     public double weight;
@@ -44,7 +43,8 @@ public class GPU_PDMM {
 
     public int numDocuments; // Number of documents in the corpus
     public int numWordsInCorpus; // Number of words in the corpus
-    public int maxTd = 2; // the maximum number of topics within a document
+    public int maxTd ; // the maximum number of topics within a document
+    public int searchTopK;
      // private double[][] schema;
     public Map<Integer, int[]> docToWordIDListMap;
 
@@ -67,7 +67,7 @@ public class GPU_PDMM {
 
     private Map<Integer, Map<Integer, Double>> schemaMap;
 
-    public double[] multiPros;
+
 
     // Path to the directory containing the corpus
     public String folderPath;
@@ -81,43 +81,56 @@ public class GPU_PDMM {
     public String tAssignsFilePath = "";
     public int savestep = 0;
 
-    public GPU_PDMM(String pathToCorpus, String pathToVector, double weight, double threshold_GPU, int filterSize, int inNumTopics,
+    public GPU_PDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize, int inNumTopics,
                   double inAlpha, double inBeta, double inlambda, int inNumIterations, int inTopWords)
             throws Exception
     {
-        this(pathToCorpus, pathToVector, weight, threshold_GPU, filterSize, inNumTopics, inAlpha, inBeta, inlambda, inNumIterations,
-                inTopWords, "GPU_PDMMmodel");
+        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inlambda, inNumIterations,
+                inTopWords, 3);
     }
-
-    public GPU_PDMM(String pathToCorpus, String pathToVector, double weight, double threshold_GPU,  int filterSize, int inNumTopics,
-                  double inAlpha, double inBeta, double inlambda,  int inNumIterations, int inTopWords,
-                  String inExpName)
+    public GPU_PDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize, int inNumTopics,
+                    double inAlpha, double inBeta, double inlambda, int inNumIterations, int inTopWords, int inMaxTd)
             throws Exception
     {
-        this(pathToCorpus, pathToVector, weight, threshold_GPU, filterSize, inNumTopics, inAlpha, inBeta, inlambda, inNumIterations,
-                inTopWords, inExpName, "", 0);
+        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inlambda, inNumIterations,
+                inTopWords, inMaxTd, 10);
+    }
+    public GPU_PDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize, int inNumTopics,
+                    double inAlpha, double inBeta, double inlambda, int inNumIterations, int inTopWords, int inMaxTd, int inSearchTopK)
+            throws Exception
+    {
+        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inlambda, inNumIterations,
+                inTopWords, inMaxTd, inSearchTopK, "GPU_PDMMmodel");
+    }
+    public GPU_PDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize, int inNumTopics,
+                    double inAlpha, double inBeta, double inlambda, int inNumIterations, int inTopWords,
+                    int inMaxTd, int inSearchTopK,String inExpName)
+            throws Exception
+    {
+        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inlambda, inNumIterations,
+                inTopWords,  inMaxTd, inSearchTopK,inExpName, "", 0);
     }
 
-    public GPU_PDMM(String pathToCorpus, String pathToVector, double weight, double threshold_GPU,int filterSize,  int inNumTopics,
-                  double inAlpha, double inBeta, double inlambda,  int inNumIterations, int inTopWords,
+    public GPU_PDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU,int inFilterSize,  int inNumTopics,
+                  double inAlpha, double inBeta, double inlambda,  int inNumIterations, int inTopWords,int inMaxTd, int inSearchTopK,
                   String inExpName, String pathToTAfile)
             throws Exception
     {
-        this(pathToCorpus, pathToVector, weight, threshold_GPU, filterSize, inNumTopics, inAlpha, inBeta, inlambda, inNumIterations,
-                inTopWords, inExpName, pathToTAfile, 0);
+        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inlambda, inNumIterations,
+                inTopWords,inMaxTd, inSearchTopK, inExpName, pathToTAfile, 0);
     }
 
-    public GPU_PDMM(String pathToCorpus, String pathToVector, double weight, double threshold_GPU, int filterSize,  int inNumTopics,
-                  double inAlpha, double inBeta,double inlambda,  int inNumIterations, int inTopWords,
+    public GPU_PDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize,  int inNumTopics,
+                  double inAlpha, double inBeta,double inlambda,  int inNumIterations, int inTopWords,int inMaxTd, int inSearchTopK,
                   String inExpName, int inSaveStep)
             throws Exception
     {
-        this(pathToCorpus, pathToVector, weight, threshold_GPU, filterSize, inNumTopics, inAlpha, inBeta, inlambda, inNumIterations,
-                inTopWords, inExpName, "", inSaveStep);
+        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inlambda, inNumIterations,
+                inTopWords,inMaxTd, inSearchTopK, inExpName, "", inSaveStep);
     }
 
-    public GPU_PDMM(String pathToCorpus, String pathToVector, double weight, double threshold_GPU, int filterSize, int inNumTopics,
-                  double inAlpha, double inBeta, double inlambda,  int inNumIterations, int inTopWords,
+    public GPU_PDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize, int inNumTopics,
+                  double inAlpha, double inBeta, double inlambda,  int inNumIterations, int inTopWords, int inMaxTd, int inSearchTopK,
                   String inExpName, String pathToTAfile, int inSaveStep)
             throws Exception
     {
@@ -128,6 +141,10 @@ public class GPU_PDMM {
         numTopics = inNumTopics;
         numIterations = inNumIterations;
         topWords = inTopWords;
+        weight = inWeight;
+        filterSize = inFilterSize;
+        maxTd = inMaxTd;
+        searchTopK = inSearchTopK;
         savestep = inSaveStep;
         expName = inExpName;
         orgExpName = expName;
@@ -202,14 +219,6 @@ public class GPU_PDMM {
         topicProbabilityGivenWord = new double[vocabularySize][numTopics];
 
         pdz = new double[numDocuments][numTopics];
-        multiPros = new double[numTopics];
-        for (int i = 0; i < numTopics; i++) {
-            multiPros[i] = 1.0 / numTopics;
-        }
-
-        alphaSum = numTopics * alpha;
-        betaSum = vocabularySize * beta;
-
 
         wordGPUInfo = new ArrayList<>();
         rg = new Random();
@@ -433,7 +442,7 @@ public class GPU_PDMM {
             int temp = 1;
             int factorial = factorial(i+1);
             for ( int j = 0; j < i+1; j++ ){
-                temp *= (topWords - j);
+                temp *= (searchTopK - j);
             }
 
             count += temp/factorial;
@@ -518,7 +527,7 @@ public class GPU_PDMM {
             topKTopics.clear();
 
             for(int k = 0; k < numTopics; k++){
-                if ( topKTopics.size() < topWords ){
+                if ( topKTopics.size() < searchTopK ){
                     topKTopics.add(k);
                     if ( Double.compare(minValue, pdz[d][k]) > 0 ){
                         minValue = pdz[d][k];
@@ -728,7 +737,7 @@ public class GPU_PDMM {
         writeParameters();
         writeDictionary();
         int[][] topicSettingArray = ZdSearchSize();
-        int[][] docTopKTopics = new int[numDocuments][topWords];
+        int[][] docTopKTopics = new int[numDocuments][searchTopK];
         double[] Ptd_Zd = new double[topicSettingArray.length];
         int[] termIDArray = null;
         int[][] mediateSamples = null;
@@ -785,7 +794,7 @@ public class GPU_PDMM {
                         for (int index = 0; index < length_topicSetting; index++) {
                             int topic = (int) topicSetting[index];
                             //		System.out.println(nzw[topic][wordID]);
-                            double pz = 1.0 * (nzw[topic][wordID] + beta) / (nz[topic] +  betaSum);
+                            double pz = 1.0 * (nzw[topic][wordID] + beta) / (nz[topic] +  beta*vocabularySize);
                             pzDist[index] = pz;
                         }
 
@@ -847,7 +856,7 @@ public class GPU_PDMM {
                             }
                         }
                         for(int j = 0; j < Ndk.get(k); j++){
-                            p32 *= (nz[k]+betaSum+Ndk.get(k)-j);
+                            p32 *= (nz[k]+beta*vocabularySize+Ndk.get(k)-j);
                         }
                         dk.clear();
 
@@ -888,8 +897,7 @@ public class GPU_PDMM {
                 }
             }
             long _e = getCurrTime();
-            System.out.println(iter + "th iter finished and every iterration costs " + (_e - _s) + "ms! Snippet "
-                    + numTopics + " topics round " + roundIndex);
+            System.out.println(iter + "th iter finished and every iterration costs " + (_e - _s) + "ms!");
 
         }
         expName = orgExpName;
@@ -923,7 +931,7 @@ public class GPU_PDMM {
             for (Integer index : mostLikelyWords) {
                 if (count < topWords) {
                     double pro = (nzw[tIndex][index] + beta)
-                            / (nz[tIndex] + betaSum);
+                            / (nz[tIndex] + beta*vocabularySize);
                     pro = Math.round(pro * 1000000.0) / 1000000.0;
                     writer.write(id2WordVocabulary.get(index) + " ");
                     count += 1;
@@ -1084,11 +1092,13 @@ public class GPU_PDMM {
         writer.write("\n-ntopics" + "\t" + numTopics);
         writer.write("\n-alpha" + "\t" + alpha);
         writer.write("\n-beta" + "\t" + beta);
-        writer.write("\n-beta" + "\t" + lambda);
+        writer.write("\n-lambda" + "\t" + lambda);
         writer.write("\n-threshold" + "\t" + threshold);
         writer.write("\n-weight" + "\t" + weight);
+        writer.write("\n-filterSize" + "\t" + filterSize);
         writer.write("\n-niters" + "\t" + numIterations);
         writer.write("\n-twords" + "\t" + topWords);
+        writer.write("\n-" + "\t" + topWords);
         writer.write("\n-name" + "\t" + expName);
         if (tAssignsFilePath.length() > 0)
             writer.write("\n-initFile" + "\t" + tAssignsFilePath);
@@ -1111,8 +1121,8 @@ public class GPU_PDMM {
     public static void main(String args[])
             throws Exception
     {
-        GPU_PDMM gpupdmm = new GPU_PDMM("dataset/SearchSnippets.txt","dataset/glove.6B.200d.txt", 0.7, 0.1, 20, 60, 0.1,
-                0.1, 1.5, 1000, 10, "testGPU_PDMM");
+        GPU_PDMM gpupdmm = new GPU_PDMM("dataset/corpus.txt","dataset/glove.6B.200d.txt", 0.7, 0.1, 20, 60, 0.1,
+                0.1, 1.5, 300, 10, 3, 10, "testGPU_PDMM");
 
         gpupdmm.inference();
     }
