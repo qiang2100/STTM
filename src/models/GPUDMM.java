@@ -88,42 +88,42 @@ public class GPUDMM {
     public String tAssignsFilePath = "";
     public int savestep = 0;
 
-    public GPUDMM(String pathToCorpus, String pathToVector, double weight, double threshold_GPU, int filterSize, int inNumTopics,
+    public GPUDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize, int inNumTopics,
                double inAlpha, double inBeta, int inNumIterations, int inTopWords)
             throws Exception
     {
-        this(pathToCorpus, pathToVector, weight, threshold_GPU, filterSize, inNumTopics, inAlpha, inBeta, inNumIterations,
+        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inNumIterations,
                 inTopWords, "GPUDMMmodel");
     }
 
-    public GPUDMM(String pathToCorpus, String pathToVector, double weight, double threshold_GPU,  int filterSize, int inNumTopics,
+    public GPUDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU,  int inFilterSize, int inNumTopics,
                double inAlpha, double inBeta, int inNumIterations, int inTopWords,
                String inExpName)
             throws Exception
     {
-        this(pathToCorpus, pathToVector, weight, threshold_GPU, filterSize, inNumTopics, inAlpha, inBeta, inNumIterations,
+        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inNumIterations,
                 inTopWords, inExpName, "", 0);
     }
 
-    public GPUDMM(String pathToCorpus, String pathToVector, double weight, double threshold_GPU,int filterSize,  int inNumTopics,
+    public GPUDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU,int inFilterSize,  int inNumTopics,
                double inAlpha, double inBeta, int inNumIterations, int inTopWords,
                String inExpName, String pathToTAfile)
             throws Exception
     {
-        this(pathToCorpus, pathToVector, weight, threshold_GPU, filterSize, inNumTopics, inAlpha, inBeta, inNumIterations,
+        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inNumIterations,
                 inTopWords, inExpName, pathToTAfile, 0);
     }
 
-    public GPUDMM(String pathToCorpus, String pathToVector, double weight, double threshold_GPU, int filterSize,  int inNumTopics,
+    public GPUDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize,  int inNumTopics,
                double inAlpha, double inBeta, int inNumIterations, int inTopWords,
                String inExpName, int inSaveStep)
             throws Exception
     {
-        this(pathToCorpus, pathToVector, weight, threshold_GPU, filterSize, inNumTopics, inAlpha, inBeta, inNumIterations,
+        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inNumIterations,
                 inTopWords, inExpName, "", inSaveStep);
     }
 
-    public GPUDMM(String pathToCorpus, String pathToVector, double weight, double threshold_GPU, int filterSize, int inNumTopics,
+    public GPUDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize, int inNumTopics,
                double inAlpha, double inBeta, int inNumIterations, int inTopWords,
                String inExpName, String pathToTAfile, int inSaveStep)
             throws Exception
@@ -137,6 +137,9 @@ public class GPUDMM {
         savestep = inSaveStep;
         expName = inExpName;
         orgExpName = expName;
+        weight = inWeight;
+        filterSize = inFilterSize;
+        threshold = threshold_GPU;
         corpusPath = pathToCorpus;
         this.pathToVector = pathToVector;
         folderPath = "results/";
@@ -221,7 +224,7 @@ public class GPUDMM {
         wordGPUInfo = new ArrayList<>();
         rg = new Random();
 
-        schemaMap = computSchema(pathToVector,threshold_GPU);
+        schemaMap = computSchema(pathToVector);
 
         System.out.println("Corpus size: " + numDocuments + " docs, "
                 + numWordsInCorpus + " words");
@@ -229,14 +232,12 @@ public class GPUDMM {
         System.out.println("Number of topics: " + numTopics);
         System.out.println("alpha: " + alpha);
         System.out.println("beta: " + beta);
+        System.out.println("weight: " + weight);
+        System.out.println("filterSize: " + filterSize);
         System.out.println("Number of sampling iterations: " + numIterations);
         System.out.println("Number of top topical words: " + topWords);
 
-        tAssignsFilePath = pathToTAfile;
-        if (tAssignsFilePath.length() > 0)
-            initialize();
-        else
-            initialize();
+        initialize();
     }
 
     public double computeSis(HashMap<Integer, float[]> wordMap, int i, int j)
@@ -252,7 +253,7 @@ public class GPUDMM {
         return sis;
     }
 
-    public Map<Integer, Map<Integer, Double>> computSchema(String pathToVector, double threshold) {
+    public Map<Integer, Map<Integer, Double>> computSchema(String pathToVector) {
 
         Map<Integer, Map<Integer, Double>> schemaMap = new HashMap<Integer, Map<Integer, Double>>();
         HashMap<Integer, float[]> wordMap = new HashMap<Integer, float[]>();
@@ -435,6 +436,9 @@ public class GPUDMM {
     }
 
     public void ratioCount(Integer topic, Integer docID, int[] termIDArray, int flag) {
+       // System.out.println("Topic:"+ topic);
+
+
         docTopicCount[topic] += flag;
         for (int t = 0; t < termIDArray.length; t++) {
             int wordID = termIDArray[t];
@@ -514,7 +518,7 @@ public class GPUDMM {
 
                 ratioCount(preTopic, s, termIDArray, -1);
 
-                double[] pzDist = new double[numTopics];
+                //double[] pzDist = new double[numTopics];
                 for (int topic = 0; topic < numTopics; topic++) {
                     double pz = 1.0 * (docTopicCount[topic] + alpha) / (numDocuments - 1 + alphaSum);
                     double value = 1.0;
@@ -527,21 +531,12 @@ public class GPUDMM {
                     }
 //					value = pz * Math.exp(logSum);
                     value = pz * value;
-                    pzDist[topic] = value;
+                    multiPros[topic] = value;
                 }
 
-                for (int i = 1; i < numTopics; i++) {
-                    pzDist[i] += pzDist[i - 1];
-                }
+                int newTopic = FuncUtils.nextDiscrete(multiPros);
 
-                double u = rg.nextDouble() * pzDist[numTopics - 1];
-                int newTopic = -1;
-                for (int i = 0; i < numTopics; i++) {
-                    if (Double.compare(pzDist[i], u) >= 0) {
-                        newTopic = i;
-                        break;
-                    }
-                }
+
                 // update
                 assignmentList[s] = newTopic;
                 ratioCount(newTopic, s, termIDArray, +1);
@@ -569,6 +564,7 @@ public class GPUDMM {
         writer.write("\n-beta" + "\t" + beta);
         writer.write("\n-threshold" + "\t" + threshold);
         writer.write("\n-weight" + "\t" + weight);
+        writer.write("\n-filterSize" + "\t" + filterSize);
         writer.write("\n-niters" + "\t" + numIterations);
         writer.write("\n-twords" + "\t" + topWords);
         writer.write("\n-name" + "\t" + expName);
@@ -694,7 +690,7 @@ public class GPUDMM {
     public static void main(String args[])
             throws Exception
     {
-        GPUDMM gpudmm = new GPUDMM("test/corpus.txt","test/glove.6B.200d.txt", 0.7, 0.1, 20, 7, 0.1,
+        GPUDMM gpudmm = new GPUDMM("dataset/corpus.txt","dataset/glove.6B.200d.txt", 0.7, 0.1, 10, 7, 0.1,
                 0.1, 2000, 20, "testGPUDMM");
         gpudmm.inference();
     }
