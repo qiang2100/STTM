@@ -76,7 +76,7 @@ public class STTM
 			}else if (cmdArgs.model.equals("GPU_PDMM")) {
 				GPU_PDMM gpupdmm = new GPU_PDMM(cmdArgs.corpus, cmdArgs.vectors,cmdArgs.GPUthreshold,cmdArgs.weight,cmdArgs.filterSize,
 						cmdArgs.ntopics, cmdArgs.alpha, cmdArgs.beta, cmdArgs.lambda,
-						cmdArgs.niters, cmdArgs.twords, cmdArgs.expModelName,
+						cmdArgs.niters, cmdArgs.twords, cmdArgs.maxTd, cmdArgs.searchTopK, cmdArgs.expModelName,
 						cmdArgs.initTopicAssgns, cmdArgs.savestep);
 				gpupdmm.inference();
 			}
