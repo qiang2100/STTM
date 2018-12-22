@@ -72,7 +72,7 @@ Users can find the pre-compiled file `STTM.jar` and source codes in folders `src
 
     $ java [-Xmx1G] -jar jar/STTM.jar –model <GPUDMM or GPU-PDMM or LFDMM or LFLDA> -corpus <Input_corpus_file_path> -vectors <Input_Word2vec_file_Path> [-ntopics <int>] [-alpha <double>] [-beta <double>] [-niters <int>] [-twords <int>] [-name <String>] [-sstep <int>]
 
-where parameters in [ ] are optional.
+where parameters in [ ] are optional. More parameters in different methods are shown in "src/utility/CmdArgs"
 
 `-model`: Specify the topic model LDA or DMM
 
@@ -86,7 +86,7 @@ where parameters in [ ] are optional.
 
 `-beta <double>`: Specify the hyper-parameter `beta`. The default `beta` value is 0.01 which is a common setting in  literature. 
 
-`-niters <int>`: Specify the number of Gibbs sampling iterations. The default value is 2000.
+`-niters <int>`: Specify the number of Gibbs sampling iterations. The default value is 1000.
 
 `-twords <int>`: Specify the number of the most probable topical words. The default value is 20.
 
