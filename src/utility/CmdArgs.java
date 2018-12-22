@@ -12,7 +12,7 @@ public class CmdArgs
 	public String corpus = "";
 
 	@Option(name = "-vectors", usage = "Specify path to the file containing word vectors")
-	public String vectors = "test/glove.6B.200d.txt";
+	public String vectors = "dataset/glove.6B.200d.txt";
 
 	@Option(name = "-nlongdoc", usage = "Specify number of pseudo-long documents")
 	public int nLongDoc = 1000;
@@ -24,9 +24,9 @@ public class CmdArgs
 	public double GPUthreshold = 0.1;
 
 	@Option(name = "-weight", usage = "Specify weight in GPUDMM")
-	public double weight = 0.2;
+	public double weight = 0.7;
 
-	@Option(name = "-filterSize", usage = "Specify number of topics")
+	@Option(name = "-filterSize", usage = "Filter less semantic related word pairs in GPUDMM")
 	public int filterSize = 20;
 
 	@Option(name = "-ntopics", usage = "Specify number of topics")
@@ -46,6 +46,12 @@ public class CmdArgs
 
 	@Option(name = "-twords", usage = "Specify number of top topical words")
 	public int twords = 20;
+
+	@Option(name = "-maxTd", usage = "Specify number of maximum topic in each document in GPU-PDMM (use 'tau' sympol in original paper)" )
+	public int maxTd = 3;
+
+	@Option(name = "-searchTopK", usage = " for Searching Space Pruning in GPU-PDMM.")
+	public int searchTopK = 10;
 
 	@Option(name = "-window", usage = "Specify the size of windon in WNTM method")
 	public int window = 10;
