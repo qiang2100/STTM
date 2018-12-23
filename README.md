@@ -25,7 +25,7 @@ Table of Contents
 Here, LF-DMM and LF-LDA are package LFTM from https://github.com/datquocnguyen/LFTM.
 ## Datasets
 
-We provided the following six short text datasets for evaluation. The summary statistics and semantic topics of these datasets (SearchSnippets, StackOverflow and Biomedical) are described in the [paper](https://arxiv.org/pdf/1701.00185.pdf). The statistics of the two datasets (Tweet and GoogleNews) are described in the "DMM" paper.
+We provided the following six short text datasets for evaluation. The summary statistics and semantic topics of these datasets (SearchSnippets, StackOverflow and Biomedical) are described in the [paper](https://arxiv.org/pdf/1701.00185.pdf). The statistics of the two datasets (Tweet and GoogleNews) are described in the "DMM" paper. **K** is the number of topics. **Num.** is the number of documents in this dataset. **Len.** is the average/maximum length. **V** is the size of the vocabulary.
 
 | Dataset        | K    |  Num.  | Len.| V|
 | --------   | -----:   | :----: |:----: |:----: |
