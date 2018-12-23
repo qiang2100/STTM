@@ -28,15 +28,12 @@ Here, LF-DMM and LF-LDA are package LFTM from https://github.com/datquocnguyen/L
 We provided the following six short text datasets for evaluation. The summary statistics and semantic topics of these datasets (SearchSnippets, StackOverflow and Biomedical) are described in the [paper](https://arxiv.org/pdf/1701.00185.pdf). The statistics of the two datasets (Tweet and GoogleNews) are described in the "DMM" paper.
 
 | 水果        | 价格    |  数量  |
-    | --------   | -----:   | :----: |
-    | 香蕉        | $1      |   5    |
-    | 苹果        | $1      |   6    |
-    | 草莓        | $1      |   7    |
+| --------   | -----:   | :----: |
+| 香蕉        | $1      |   5    |
+| 苹果        | $1      |   6    |
+| 草莓        | $1      |   7    |
 
-作者：Gaolex
-链接：https://www.jianshu.com/p/abaff828100d
-來源：简书
-简书著作权归作者所有，任何形式的转载都请联系作者获得授权并注明出处。
+
 
 * SearchSnippets: This dataset was selected from the results of web search transaction using predefined phrases of 8 different domains.
 
