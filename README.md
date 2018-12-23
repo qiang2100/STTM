@@ -32,9 +32,9 @@ We provided the following six short text datasets for evaluation. The summary st
 | SearchSnippets        | 8 | 12,340 |17.88/38| 30,642|
 | StackOverflow        | 20 | 20,000 | 8.31/34 | 22,956 |
 | Biomedical        | 20 |20,000 |12.88/53 | 18,888 |
-| Tweet        | 89      |   2472    |    |      |
-| GoogleNews        | 152      |   11,109    |    |      |
-| Pascal_Flickr        | 20      |   4834    |    |      |
+| Tweet        | 89      |   2472    |   8.55/20 |  5098    |
+| GoogleNews        | 152      |   11,109    |  6.23/14  |    8110  |
+| Pascal_Flickr        | 20      |   4834    | 5.37/19    |    3431  |
 
 
 
