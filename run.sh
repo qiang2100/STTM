@@ -14,9 +14,9 @@ iter=50
 
 K=89
 
-for times in {1..2}; do
+for times in {1..20}; do
 
-	java -jar jar/STTM.jar -model $Algorithm -alpha $a -beta 0.1 -ntopics $K -corpus $DATA_PATH/Tweet.txt -name $Algorithm-$Dataset-$times -niters 50
+	java -jar jar/STTM.jar -model $Algorithm -alpha 0.1 -beta 0.1 -ntopics $K -corpus $DATA_PATH/Tweet.txt -name $Algorithm-$Dataset-$times -niters 50
 
 done
 
