@@ -66,6 +66,9 @@ public class SATM {
     public String tAssignsFilePath = "";
     public int savestep = 0;
 
+    public double initTime = 0;
+    public double iterTime = 0;
+
 
     public SATM(String pathToCorpus, int inNumTopics, int num_longDoc, double threshold,
                double inAlpha, double inBeta, int inNumIterations, int inTopWords)
@@ -208,10 +211,15 @@ public class SATM {
         System.out.println("Number of top topical words: " + topWords);
 
         tAssignsFilePath = pathToTAfile;
+
+        long startTime = System.currentTimeMillis();
+
         if (tAssignsFilePath.length() > 0)
             initialize();
         else
             initialize();
+
+        initTime =System.currentTimeMillis()-startTime;
     }
 
     /**
@@ -301,13 +309,15 @@ public class SATM {
             throws IOException
     {
 
-        writeParameters();
+
         writeDictionary();
 
         System.out.println("Running Gibbs sampling inference: ");
 
+        long startTime = System.currentTimeMillis();
+
         for (int iter = 0; iter < this.numIterations; iter++) {
-            long startTime = System.currentTimeMillis();
+
 
             computePds();
 
@@ -380,9 +390,11 @@ public class SATM {
                 }
             }
 
-            System.out.println("finished iter :" + iter + "\tcost time:" + ((double) System.currentTimeMillis() - startTime) / 1000);
+            //System.out.println("finished iter :" + iter + "\tcost time:" + ((double) System.currentTimeMillis() - startTime) / 1000);
 
         }
+
+        iterTime =System.currentTimeMillis()-startTime;
 
         expName = orgExpName;
 
@@ -400,6 +412,8 @@ public class SATM {
         writeDocTopicPros();
 
         writeTopicWordPros();
+
+        writeParameters();
     }
 
     public void writeDocTopicPros()
@@ -499,6 +513,10 @@ public class SATM {
             writer.write("\n-initFile" + "\t" + tAssignsFilePath);
         if (savestep > 0)
             writer.write("\n-sstep" + "\t" + savestep);
+
+        writer.write("\n-initiation time" + "\t" + initTime);
+        writer.write("\n-one iteration time" + "\t" + iterTime/numIterations);
+        writer.write("\n-total time" + "\t" + (initTime+iterTime));
 
         writer.close();
     }
