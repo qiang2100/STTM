@@ -95,6 +95,9 @@ public class LFDMM
     public String tAssignsFilePath = "";
     public int savestep = 0;
 
+    public double initTime = 0;
+    public double iterTime = 0;
+
     public LFDMM(String pathToCorpus, String pathToWordVectorsFile, int inNumTopics,
             double inAlpha, double inBeta, double inLambda, int inNumInitIterations,
             int inNumIterations, int inTopWords)
@@ -228,11 +231,15 @@ public class LFDMM
                 + numIterations);
         System.out.println("Number of top topical words: " + topWords);
 
+        long startTime = System.currentTimeMillis();
+
         tAssignsFilePath = pathToTAfile;
         if (tAssignsFilePath.length() > 0)
             initialize(tAssignsFilePath);
         else
             initialize();
+
+        initTime =System.currentTimeMillis()-startTime;
 
     }
 
@@ -305,6 +312,13 @@ public class LFDMM
             }
             topicAssignments.add(topics);
         }
+
+        for (int iter = 1; iter <= numInitIterations; iter++) {
+
+            System.out.println("\tInitial sampling iteration: " + (iter));
+
+            sampleSingleInitialIteration();
+        }
     }
 
     public void initialize(String pathToTopicAssignmentFile)
@@ -347,6 +361,13 @@ public class LFDMM
                         .println("The topic modeling corpus and topic assignment file are not consistent!!!");
                 throw new Exception();
             }
+
+            for (int iter = 1; iter <= numInitIterations; iter++) {
+
+                System.out.println("\tInitial sampling iteration: " + (iter));
+
+                sampleSingleInitialIteration();
+            }
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -358,30 +379,27 @@ public class LFDMM
     {
         System.out.println("Running Gibbs sampling inference: ");
 
-        for (int iter = 1; iter <= numInitIterations; iter++) {
 
-            System.out.println("\tInitial sampling iteration: " + (iter));
 
-            sampleSingleInitialIteration();
-        }
+        long startTime = System.currentTimeMillis();
 
         for (int iter = 1; iter <= numIterations; iter++) {
 
-            System.out.println("\tLFDMM sampling iteration: " + (iter));
+            if(iter%50==0)
+                System.out.println("\tLFDMM sampling iteration: " + (iter));
 
             optimizeTopicVectors();
 
             sampleSingleIteration();
 
-            if ((savestep > 0) && (iter % savestep == 0) && (iter < numIterations)) {
-                System.out.println("\t\tSaving the output from the " + iter + "^{th} sample");
-                expName = orgExpName + "-" + iter;
-                write();
-            }
+
         }
+
+        iterTime =System.currentTimeMillis()-startTime;
+
         expName = orgExpName;
 
-        writeParameters();
+
         System.out.println("Writing output from the last sample ...");
         write();
 
@@ -569,6 +587,10 @@ public class LFDMM
         if (savestep > 0)
             writer.write("\n-sstep" + "\t" + savestep);
 
+        writer.write("\n-initiation time" + "\t" + initTime);
+        writer.write("\n-one iteration time" + "\t" + iterTime/numIterations);
+        writer.write("\n-total time" + "\t" + (initTime+iterTime));
+
         writer.close();
     }
 
@@ -712,12 +734,14 @@ public class LFDMM
         writeDocTopicPros();
         writeTopicAssignments();
         writeTopicWordPros();
+
+        writeParameters();
     }
 
     public static void main(String args[])
         throws Exception
     {
-        LFDMM lfdmm = new LFDMM("dataset/corpus.txt", "dataset/glove.6B.200d.txt", 4, 0.1, 0.01, 0.6, 2000,
+        LFDMM lfdmm = new LFDMM("dataset/corpus.txt", "dataset/glove.6B.200d.txt", 4, 0.1, 0.01, 0.6, 50,
                 200, 20, "testLFDMM");
         lfdmm.writeParameters();
         lfdmm.inference();
