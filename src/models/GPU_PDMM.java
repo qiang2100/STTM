@@ -81,6 +81,9 @@ public class GPU_PDMM {
     public String tAssignsFilePath = "";
     public int savestep = 0;
 
+    public double initTime = 0;
+    public double iterTime = 0;
+
     public GPU_PDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize, int inNumTopics,
                   double inAlpha, double inBeta, double inlambda, int inNumIterations, int inTopWords)
             throws Exception
@@ -229,7 +232,14 @@ public class GPU_PDMM {
         Ck = new int[numTopics];
         CkSum = 0;
 
+        long startTime = System.currentTimeMillis();
         schemaMap = computSchema(pathToVector,threshold_GPU);
+
+
+
+        initialize();
+
+        initTime =System.currentTimeMillis()-startTime;
 
         System.out.println("Corpus size: " + numDocuments + " docs, "
                 + numWordsInCorpus + " words");
@@ -239,12 +249,6 @@ public class GPU_PDMM {
         System.out.println("beta: " + beta);
         System.out.println("Number of sampling iterations: " + numIterations);
         System.out.println("Number of top topical words: " + topWords);
-
-        tAssignsFilePath = pathToTAfile;
-        if (tAssignsFilePath.length() > 0)
-            initialize();
-        else
-            initialize();
     }
 
 
@@ -734,8 +738,11 @@ public class GPU_PDMM {
     public void inference()
             throws IOException
     {
-        writeParameters();
+
         writeDictionary();
+
+        long _s = getCurrTime();
+
         int[][] topicSettingArray = ZdSearchSize();
         int[][] docTopKTopics = new int[numDocuments][searchTopK];
         double[] Ptd_Zd = new double[topicSettingArray.length];
@@ -756,9 +763,10 @@ public class GPU_PDMM {
 
         for (int iter = 1; iter <= numIterations; iter++) {
 
-            System.out.println("\tSampling iteration: " + (iter));
+            if(iter%50==0)
+                System.out.println("\tSampling iteration: " + (iter));
 
-            long _s = getCurrTime();
+
 
             //		if don't use heu strategy,please don't Use below three code line
             compute_phi();
@@ -896,11 +904,13 @@ public class GPU_PDMM {
                     ratioCount(mediateSamples[new_index][w], s, termIDArray[w], w, +1);
                 }
             }
-            long _e = getCurrTime();
-            System.out.println(iter + "th iter finished and every iterration costs " + (_e - _s) + "ms!");
+
 
         }
         expName = orgExpName;
+
+        long _e = getCurrTime();
+        iterTime = (_e - _s) ;
 
         System.out.println("Writing output from the last sample ...");
         write();
@@ -1027,6 +1037,7 @@ public class GPU_PDMM {
         writeDocTopicPros();
         writeTopicAssignments();
         writeTopicWordPros();
+        writeParameters();
     }
 
 
@@ -1105,6 +1116,10 @@ public class GPU_PDMM {
         if (savestep > 0)
             writer.write("\n-sstep" + "\t" + savestep);
 
+        writer.write("\n-initiation time" + "\t" + initTime);
+        writer.write("\n-one iteration time" + "\t" + iterTime/numIterations);
+        writer.write("\n-total time" + "\t" + (initTime+iterTime));
+
         writer.close();
     }
 
@@ -1122,7 +1137,7 @@ public class GPU_PDMM {
             throws Exception
     {
         GPU_PDMM gpupdmm = new GPU_PDMM("dataset/corpus.txt","dataset/glove.6B.200d.txt", 0.7, 0.1, 20, 60, 0.1,
-                0.1, 1.5, 300, 10, 3, 10, "testGPU_PDMM");
+                0.1, 1.5, 30, 10, 3, 10, "testGPU_PDMM");
 
         gpupdmm.inference();
     }
