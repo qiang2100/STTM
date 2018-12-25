@@ -103,6 +103,9 @@ public class DMM
 	public String expName = "DMMmodel";
 	public String orgExpName = "DMMmodel";
 
+	public double initTime = 0;
+	public double iterTime = 0;
+
 
 	public DMM(String pathToCorpus, int inNumTopics,
 		double inAlpha, double inBeta, int inNumIterations, int inTopWords)
@@ -219,6 +222,9 @@ public class DMM
 		throws IOException
 	{
 		System.out.println("Randomly initialzing topic assignments ...");
+
+		long startTime = System.currentTimeMillis();
+
 		z = new int[numDocuments];
 		for (int i = 0; i < numDocuments; i++) {
 			int topic = FuncUtils.nextDiscrete(multiPros); // Sample a topic
@@ -238,6 +244,8 @@ public class DMM
 
 			N_d[i] = docLen; //documents[m].length;
 		}
+
+		initTime =System.currentTimeMillis()-startTime;
 	}
 
 
@@ -245,10 +253,12 @@ public class DMM
 	public void inference()
 		throws IOException
 	{
-		writeParameters();
+
 		writeDictionary();
 
 		System.out.println("Running Gibbs sampling inference: ");
+
+		long startTime = System.currentTimeMillis();
 
 		for (int iter = 1; iter <= ITERATIONS; iter++) {
 
@@ -262,12 +272,18 @@ public class DMM
 				z[m] = topic;
 			}
 		}
+
+		iterTime =System.currentTimeMillis()-startTime;
+
 		expName = orgExpName;
 
 		System.out.println("Writing output from the last sample ...");
 		write();
 
 		System.out.println("Sampling completed!");
+
+		System.out.println("the initiation tims: " + initTime);
+		System.out.println("the iteration tims: " + iterTime);
 
 	}
 
@@ -326,6 +342,10 @@ public class DMM
 		writer.write("\n-niters" + "\t" + ITERATIONS);
 		writer.write("\n-twords" + "\t" + topWords);
 		writer.write("\n-name" + "\t" + expName);
+
+		writer.write("\n-initiation time" + "\t" + initTime);
+		writer.write("\n-one iteration time" + "\t" + iterTime/ITERATIONS);
+		writer.write("\n-total time" + "\t" + (initTime+iterTime));
 
 
 		writer.close();
@@ -422,8 +442,6 @@ public class DMM
 		writer.close();
 	}
 
-
-
 	public void writeDocTopicPros()
 		throws IOException
 	{
@@ -453,6 +471,7 @@ public class DMM
 	public void write()
 		throws IOException
 	{
+		writeParameters();
 		writeTopTopicalWords();
 		writeDocTopicPros();
 		writeTopicAssignments();
@@ -463,7 +482,7 @@ public class DMM
 		throws Exception
 	{
 		DMM dmm = new DMM("test/corpus.txt", 7, 0.1,
-			0.1, 2000, 20, "testDMM");
+			0.1, 50, 20, "testDMM");
 		dmm.inference();
 	}
 }
