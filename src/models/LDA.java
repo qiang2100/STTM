@@ -33,7 +33,7 @@ public class LDA
 
 
 	public List<List<Integer>> corpus; // Word ID-based corpus
-	public List<List<Integer>> topicAssignments; // Topics assignments for words
+
 													// in the corpus
 	public int numDocuments; // Number of documents in the corpus
 	public int numWordsInCorpus; // Number of words in the corpus
@@ -115,6 +115,9 @@ public class LDA
 	public String orgExpName = "LDAmodel";
 
 
+	public double initTime = 0;
+	public double iterTime = 0;
+
 	public LDA(String pathToCorpus, int inNumTopics,
 		double inAlpha, double inBeta, int inNumIterations, int inTopWords)
 		throws Exception
@@ -157,12 +160,17 @@ public class LDA
 			br = new BufferedReader(new FileReader(pathToCorpus));
 			for (String doc; (doc = br.readLine()) != null;) {
 
-				if (doc.trim().length() == 0)
+				if (doc.trim().length() == 0) {
+
+					System.out.println(numDocuments);
 					continue;
+				}
 
 				String[] words = doc.trim().split("\\s+");
 				List<Integer> document = new ArrayList<Integer>();
 
+				if(words.length==0)
+					System.out.println("here!");
 				for (String word : words) {
 					if (word2IdVocabulary.containsKey(word)) {
 						document.add(word2IdVocabulary.get(word));
@@ -221,7 +229,7 @@ public class LDA
 	{
 		System.out.println("Randomly initializing topic assignments ...");
 
-		topicAssignments = new ArrayList<List<Integer>>();
+		long startTime = System.currentTimeMillis();
 
 		for (int i = 0; i < numDocuments; i++) {
 			List<Integer> topics = new ArrayList<Integer>();
@@ -236,14 +244,15 @@ public class LDA
 				nwsum[topic] += 1;
 				z[i][j] = topic;
 			}
-			topicAssignments.add(topics);
+
 		}
+		initTime =System.currentTimeMillis()-startTime;
 	}
 
 	public void inference()
 		throws IOException
 	{
-		writeParameters();
+
 		writeDictionary();
 
 		System.out.println("Running Gibbs sampling inference: ");
@@ -260,6 +269,8 @@ public class LDA
 		System.out.println("Sampling " + ITERATIONS
 				+ " iterations with burn-in of " + BURN_IN + " (B/S="
 				+ THIN_INTERVAL + ").");
+
+		long startTime = System.currentTimeMillis();
 
 		for (int i = 0; i < ITERATIONS; i++) {
 
@@ -295,6 +306,8 @@ public class LDA
 				dispcol = 0;
 			}
 		}
+
+		iterTime =System.currentTimeMillis()-startTime;
 
 		expName = orgExpName;
 
@@ -392,6 +405,10 @@ public class LDA
 		writer.write("\n-twords" + "\t" + topWords);
 		writer.write("\n-name" + "\t" + expName);
 
+		writer.write("\n-initiation time" + "\t" + initTime);
+		writer.write("\n-one iteration time" + "\t" + iterTime/ITERATIONS);
+		writer.write("\n-total time" + "\t" + (initTime+iterTime));
+
 		writer.close();
 	}
 
@@ -415,7 +432,7 @@ public class LDA
 		for (int dIndex = 0; dIndex < numDocuments; dIndex++) {
 			int docSize = corpus.get(dIndex).size();
 			for (int wIndex = 0; wIndex < docSize; wIndex++) {
-				writer.write(topicAssignments.get(dIndex).get(wIndex) + " ");
+				writer.write(z[dIndex][wIndex] + " ");
 			}
 			writer.write("\n");
 		}
@@ -530,13 +547,15 @@ public class LDA
 		writeDocTopicPros();
 		writeTopicAssignments();
 		writeTopicWordPros();
+
+		writeParameters();
 	}
 
 	public static void main(String args[])
 		throws Exception
 	{
-		LDA lda = new LDA("dataset/SearchSnippets.txt", 60, 0.1,
-			0.1, 1000, 10, "SearchSnippetsLDA");
+		LDA lda = new LDA("dataset/GoogleNews.txt", 60, 0.1,
+			0.1, 1000, 10, "GoogleNewsLDA");
 		lda.inference();
 	}
 }
