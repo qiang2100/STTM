@@ -69,6 +69,9 @@ public class PTM {
     public String tAssignsFilePath = "";
     public int savestep = 0;
 
+    public double initTime = 0;
+    public double iterTime = 0;
+
 
     public PTM(String pathToCorpus, int inNumTopics, int num_longDoc,
                 double inAlpha, double inBeta, int inNumIterations, int inTopWords)
@@ -225,6 +228,8 @@ public class PTM {
     {
         System.out.println("Randomly initializing topic assignments ...");
 
+        long startTime = System.currentTimeMillis();
+
         for (int d = 0; d < numShorDoc; d++) {
             int termIDArray[] = Corpus.get(d);
 
@@ -257,6 +262,9 @@ public class PTM {
             wordToTopic.add(prewordToTopic);
             //assignmentList.add(d_assignment_list);
         }
+
+        initTime =System.currentTimeMillis()-startTime;
+
         System.out.println("finish init_PTM!");
 
     }
@@ -266,13 +274,15 @@ public class PTM {
             throws IOException
     {
 
-        writeParameters();
+
         writeDictionary();
 
         System.out.println("Running Gibbs sampling inference: ");
 
+        long startTime = System.currentTimeMillis();
+
         for (int iter = 0; iter < this.numIterations; iter++) {
-            long startTime = System.currentTimeMillis();
+
 
 
             for (int s = 0; s < Corpus.size(); s++) {
@@ -335,9 +345,11 @@ public class PTM {
                 }
             }
 
-            System.out.println("finished iter :" + iter + "\tcost time:" + ((double) System.currentTimeMillis() - startTime) / 1000);
+            //System.out.println("finished iter :" + iter + "\tcost time:" + ((double) System.currentTimeMillis() - startTime) / 1000);
 
         }
+
+        iterTime =System.currentTimeMillis()-startTime;
 
         expName = orgExpName;
 
@@ -355,6 +367,7 @@ public class PTM {
         writeDocTopicPros();
 
         writeTopicWordPros();
+        writeParameters();
     }
 
     public void writeDocTopicPros()
@@ -449,6 +462,10 @@ public class PTM {
         if (savestep > 0)
             writer.write("\n-sstep" + "\t" + savestep);
 
+        writer.write("\n-initiation time" + "\t" + initTime);
+        writer.write("\n-one iteration time" + "\t" + iterTime/numIterations);
+        writer.write("\n-total time" + "\t" + (initTime+iterTime));
+
         writer.close();
     }
 
@@ -467,7 +484,7 @@ public class PTM {
             throws Exception
     {
         PTM ptm = new PTM("test/corpus.txt", 7, 500, 0.001,
-                0.1, 1000, 20, "testPTM");
+                0.1, 100, 20, "testPTM");
         ptm.inference();
     }
 
