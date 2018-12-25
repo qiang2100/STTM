@@ -69,6 +69,9 @@ public class WNTM {
     public String tAssignsFilePath = "";
     public int savestep = 0;
 
+    public double initTime = 0;
+    public double iterTime = 0;
+
     public WNTM(String pathToCorpus, int inNumTopics,
                double inAlpha, double inBeta, int inNumIterations, int inTopWords, int inWindowSize)
             throws Exception
@@ -169,6 +172,8 @@ public class WNTM {
 
         vocabularySize = word2IdVocabulary.size(); // vocabularySize = indexWord
 
+        long startTime = System.currentTimeMillis();
+
         constructWordGraph();
         constructPseudoCorpus();
         numPseudoDocuments = pseudo_corpus.size();
@@ -187,6 +192,16 @@ public class WNTM {
         alphaSum = numTopics * alpha;
         betaSum = vocabularySize * beta;
 
+
+
+        tAssignsFilePath = pathToTAfile;
+        if (tAssignsFilePath.length() > 0)
+            initialize();
+        else
+            initialize();
+
+        initTime =System.currentTimeMillis()-startTime;
+
         System.out.println("Corpus size: " + numDocuments + " docs, "
                 + numWordsInCorpus + " words");
         System.out.println("Vocabuary size: " + vocabularySize);
@@ -195,12 +210,6 @@ public class WNTM {
         System.out.println("beta: " + beta);
         System.out.println("Number of sampling iterations: " + numIterations);
         System.out.println("Number of top topical words: " + topWords);
-
-        tAssignsFilePath = pathToTAfile;
-        if (tAssignsFilePath.length() > 0)
-            initialize();
-        else
-            initialize();
     }
 
     public boolean containsEdge(int p1, int p2) {
@@ -353,10 +362,12 @@ public class WNTM {
     public void inference()
             throws IOException
     {
-        writeParameters();
+
         writeDictionary();
 
         System.out.println("Running Gibbs sampling inference: ");
+
+        long startTime = System.currentTimeMillis();
 
         for (int iter = 1; iter <= numIterations; iter++) {
 
@@ -374,6 +385,8 @@ public class WNTM {
             }
         }
         expName = orgExpName;
+
+        iterTime =System.currentTimeMillis()-startTime;
 
         System.out.println("Writing output from the last sample ...");
         write();
@@ -426,7 +439,7 @@ public class WNTM {
     {
         BufferedWriter writer = new BufferedWriter(new FileWriter(folderPath
                 + expName + ".paras"));
-        writer.write("-model" + "\t" + "LDA");
+        writer.write("-model" + "\t" + "WNTM");
         writer.write("\n-corpus" + "\t" + corpusPath);
         writer.write("\n-ntopics" + "\t" + numTopics);
         writer.write("\n-alpha" + "\t" + alpha);
@@ -439,6 +452,9 @@ public class WNTM {
         if (savestep > 0)
             writer.write("\n-sstep" + "\t" + savestep);
 
+        writer.write("\n-initiation time" + "\t" + initTime);
+        writer.write("\n-one iteration time" + "\t" + iterTime/numIterations);
+        writer.write("\n-total time" + "\t" + (initTime+iterTime));
         writer.close();
     }
 
@@ -534,13 +550,15 @@ public class WNTM {
         writeTopTopicalWords();
         writeTopicWordPros();
         writeDocTopicPros();
+
+        writeParameters();
     }
 
     public static void main(String args[])
             throws Exception
     {
         WNTM wntm = new WNTM("test/corpus.txt", 7, 0.1,
-                0.01, 2000, 10, 20, "testWNTM");
+                0.01, 100, 10, 20, "testWNTM");
         wntm.inference();
     }
 }
