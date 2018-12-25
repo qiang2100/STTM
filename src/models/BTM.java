@@ -73,6 +73,9 @@ public class BTM {
     public String tAssignsFilePath = "";
     public int savestep = 0;
 
+    public double initTime = 0;
+    public double iterTime = 0;
+
     public BTM(String pathToCorpus, int inNumTopics,
                             double inAlpha, double inBeta, int inNumIterations, int inTopWords)
             throws Exception
@@ -222,6 +225,8 @@ public class BTM {
     {
         System.out.println("Randomly initializing topic assignments using BTM");
 
+        long startTime = System.currentTimeMillis();
+
         int docIndex = 0;
         for(int[] doc:this.wordId_of_corpus){
             HashMap<Long, Integer> oneCop = new HashMap<>();
@@ -256,19 +261,23 @@ public class BTM {
             this.topic_of_biterms[bitermIndex] = topicId;
         }
 
+        initTime =System.currentTimeMillis()-startTime;
+
     }
 
     public void inference()
             throws IOException
     {
 
-        writeParameters();
+
         writeDictionary();
 
         System.out.println("Running Gibbs sampling inference: ");
 
+        long startTime = System.currentTimeMillis();
+
         for (int iter = 0; iter < this.numIterations; iter++) {
-            long startTime = System.currentTimeMillis();
+
 
             for(int bitermIndex = 0;bitermIndex<this.topic_of_biterms.length;bitermIndex++) {
                 int oldTopicId = this.topic_of_biterms[bitermIndex];
@@ -296,9 +305,11 @@ public class BTM {
                 this.topic_of_biterms[bitermIndex] = newTopicId;
             }
 
-            System.out.println("finished iter :" + iter + "\tcost time:" + ((double) System.currentTimeMillis() - startTime) / 1000);
+
 
         }
+
+        iterTime =System.currentTimeMillis()-startTime;
 
         expName = orgExpName;
 
@@ -326,6 +337,11 @@ public class BTM {
             writer.write("\n-initFile" + "\t" + tAssignsFilePath);
         if (savestep > 0)
             writer.write("\n-sstep" + "\t" + savestep);
+
+        writer.write("\n-initiation time" + "\t" + initTime);
+        writer.write("\n-one iteration time" + "\t" + iterTime/numIterations);
+        writer.write("\n-total time" + "\t" + (initTime+iterTime));
+
 
         writer.close();
     }
@@ -446,12 +462,14 @@ public class BTM {
         writeDocTopicPros();
 
         writeTopicWordPros();
+
+        writeParameters();
     }
 
     public static void main(String args[])
             throws Exception
     {
-        BTM btm = new BTM("dataset/SearchSnippets.txt", 8, 0.1, 0.1, 2000, 20, "SearchSnippetsBTM");
+        BTM btm = new BTM("dataset/SearchSnippets.txt", 8, 0.1, 0.1, 50, 20, "SearchSnippetsBTM");
         btm.inference();
     }
 }
