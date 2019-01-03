@@ -62,7 +62,7 @@ public class STTM
 						cmdArgs.initTopicAssgns, cmdArgs.savestep);
 				satm.inference();
 			}else if (cmdArgs.model.equals("PTM")) {
-				PTM ptm = new PTM(cmdArgs.corpus, cmdArgs.ntopics, cmdArgs.nLongDoc, cmdArgs.alpha, cmdArgs.beta,
+				PTM ptm = new PTM(cmdArgs.corpus, cmdArgs.ntopics, cmdArgs.nLongDoc, cmdArgs.alpha, cmdArgs.beta, cmdArgs.gamma,
 						cmdArgs.niters, cmdArgs.twords, cmdArgs.expModelName,
 						cmdArgs.initTopicAssgns, cmdArgs.savestep);
 				ptm.inference();
@@ -127,7 +127,8 @@ public class STTM
 				ClassificationEval.evaluate(cmdArgs.labelFile, cmdArgs.dir,
 						cmdArgs.prob);
 			}else if (cmdArgs.model.equals("CoherenceEval")) {
-					CoherenceEval.evaluate(cmdArgs.labelFile, cmdArgs.dir,
+					CoherenceEval ce = new CoherenceEval();
+				    ce.evaluate(cmdArgs.labelFile, cmdArgs.dir,
 							cmdArgs.topWords);
 				}
 			else {
