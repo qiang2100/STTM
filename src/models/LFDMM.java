@@ -313,9 +313,11 @@ public class LFDMM
             topicAssignments.add(topics);
         }
 
+        System.out.println("Initial sampling iteration: " );
+
         for (int iter = 1; iter <= numInitIterations; iter++) {
 
-            System.out.println("\tInitial sampling iteration: " + (iter));
+            System.out.print("\t" + (iter));
 
             sampleSingleInitialIteration();
         }
@@ -386,7 +388,7 @@ public class LFDMM
         for (int iter = 1; iter <= numIterations; iter++) {
 
             if(iter%50==0)
-                System.out.println("\tLFDMM sampling iteration: " + (iter));
+                System.out.print(" " + (iter));
 
             optimizeTopicVectors();
 
@@ -394,7 +396,7 @@ public class LFDMM
 
 
         }
-
+        System.out.println();
         iterTime =System.currentTimeMillis()-startTime;
 
         expName = orgExpName;
@@ -741,8 +743,8 @@ public class LFDMM
     public static void main(String args[])
         throws Exception
     {
-        LFDMM lfdmm = new LFDMM("dataset/corpus.txt", "dataset/glove.6B.200d.txt", 4, 0.1, 0.01, 0.6, 50,
-                200, 20, "testLFDMM");
+        LFDMM lfdmm = new LFDMM("dataset/Pascal_Flickr.txt", "dataset/glove.6B.200d.txt", 20, 0.1, 0.01, 0.6, 50,
+                500, 10, "Pascal_FlickrLFDMM");
         lfdmm.writeParameters();
         lfdmm.inference();
     }
