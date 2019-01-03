@@ -278,6 +278,8 @@ public class BTM {
 
         for (int iter = 0; iter < this.numIterations; iter++) {
 
+            if(iter%50 == 0)
+                System.out.print(" " + (iter));
 
             for(int bitermIndex = 0;bitermIndex<this.topic_of_biterms.length;bitermIndex++) {
                 int oldTopicId = this.topic_of_biterms[bitermIndex];
@@ -312,6 +314,7 @@ public class BTM {
         iterTime =System.currentTimeMillis()-startTime;
 
         expName = orgExpName;
+        System.out.println();
 
         System.out.println("Writing output from the last sample ...");
         write();
@@ -469,7 +472,7 @@ public class BTM {
     public static void main(String args[])
             throws Exception
     {
-        BTM btm = new BTM("dataset/SearchSnippets.txt", 8, 0.1, 0.1, 50, 20, "SearchSnippetsBTM");
+        BTM btm = new BTM("dataset/Pascal_Flickr.txt", 20, 0.1, 0.1, 500, 10, "Pascal_FlickrBTM");
         btm.inference();
     }
 }
