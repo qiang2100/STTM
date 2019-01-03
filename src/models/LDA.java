@@ -554,8 +554,8 @@ public class LDA
 	public static void main(String args[])
 		throws Exception
 	{
-		LDA lda = new LDA("dataset/GoogleNews.txt", 60, 0.1,
-			0.1, 1000, 10, "GoogleNewsLDA");
+		LDA lda = new LDA("dataset/Tweet.txt", 100, 0.1,
+			0.1, 1000, 10, "TweetLDA");
 		lda.inference();
 	}
 }
