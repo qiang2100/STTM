@@ -7,25 +7,16 @@ import java.math.BigDecimal;
 import java.util.*;
 
 /**
- *  * * GPUDMM: From A Java package STTM for the short text topic models
- *
- * Implementation of GPUDMM, using collapsed Gibbs sampling, as described in:
- *
- * Chenliang Li, Yu Duan, Haoran Wang, Zhiqian Zhang, Aixin Sun, and Zongyang Ma. 2017. Enhancing Topic
- Modeling for Short Texts with Auxiliary Word Embeddings. ACM Trans. Inf. Syst. 36, 2, Article 11 (August
- 2017), 30 pages..
- *
- * Created by jipengqiang on 18/7/2.
+ * Created by jipengqiang on 18/7/24.
  */
-public class GPUDMM {
+public class GPU_PDMM {
 
 
-    public double alpha, beta;
-    public int numTopics; // Number of topics
-    public int numIterations; // Number of Gibbs sampling iterations
-    public int topWords; // Number of most probable words for each topic
-    public double alphaSum; // alpha * numTopics
-    public double betaSum; // beta * vocabularySize
+    public int numTopics;
+    public double alpha, beta, lambda;
+    public int numIterations;
+
+
 
     public ArrayList<int[]> Corpus = new ArrayList<>(); // Word ID-based corpus
 
@@ -33,7 +24,7 @@ public class GPUDMM {
     private Random rg;
     public double threshold;
     public double weight;
-
+    public int topWords;
     public int filterSize;
 
 
@@ -44,37 +35,39 @@ public class GPUDMM {
     public int vocabularySize; // The number of word types in the corpus
 
 
-    public Map<Integer, Double> wordIDFMap;
-    public Map<Integer, Map<Integer, Double>> docUsefulWords;
-    public ArrayList<ArrayList<Integer>> topWordIDList;
+
+    public Map<Integer, Set<Integer>> ZdMap;
+    public int[] TdArray;
+
+
 
     public int numDocuments; // Number of documents in the corpus
     public int numWordsInCorpus; // Number of words in the corpus
+    public int maxTd ; // the maximum number of topics within a document
+    public int searchTopK;
+     // private double[][] schema;
+    public Map<Integer, int[]> docToWordIDListMap;
 
-    //private double[][] schema;
-
-    //	public String initialFileName;
     public double[][] phi;
     private double[] pz;
     private double[][] pdz;
     private double[][] topicProbabilityGivenWord;
+    private double[][] pwz;
 
     public ArrayList<ArrayList<Boolean>> wordGPUFlag; // wordGPUFlag.get(doc).get(wordIndex)
-    public int[] assignmentList; // topic assignment for every document
+    public Map<Integer, int[]> assignmentListMap; // topic assignment for every document
     public ArrayList<ArrayList<Map<Integer, Double>>> wordGPUInfo;
 
-    // Number of documents assigned to a topic
-    public int[] docTopicCount;
-    // numTopics * vocabularySize matrix
-    // Given a topic: number of times a word type assigned to the topic
-    public int[][] topicWordCount;
-    // Total number of words assigned to a topic
-    public int[] sumTopicWordCount;
+    private double[] nz; // [topic]; nums of words in every topic
+    private double[][] nzw; // V_{.k}
+
+    private int[] Ck; // Ck[topic]
+    private int CkSum;
+
 
     private Map<Integer, Map<Integer, Double>> schemaMap;
 
-    // Double array used to sample a topic
-    public double[] multiPros;
+
 
     // Path to the directory containing the corpus
     public String folderPath;
@@ -83,66 +76,81 @@ public class GPUDMM {
     //Path to the word2vec
     public String pathToVector;
 
-    public String expName = "GPUDMMmodel";
-    public String orgExpName = "GPUDMMmodel";
+    public String expName = "GPU_PDMMmodel";
+    public String orgExpName = "GPU_PDMMmodel";
     public String tAssignsFilePath = "";
     public int savestep = 0;
 
     public double initTime = 0;
     public double iterTime = 0;
 
-    public GPUDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize, int inNumTopics,
-               double inAlpha, double inBeta, int inNumIterations, int inTopWords)
+    public GPU_PDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize, int inNumTopics,
+                  double inAlpha, double inBeta, double inlambda, int inNumIterations, int inTopWords)
             throws Exception
     {
-        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inNumIterations,
-                inTopWords, "GPUDMMmodel");
+        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inlambda, inNumIterations,
+                inTopWords, 3);
     }
-
-    public GPUDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU,  int inFilterSize, int inNumTopics,
-               double inAlpha, double inBeta, int inNumIterations, int inTopWords,
-               String inExpName)
+    public GPU_PDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize, int inNumTopics,
+                    double inAlpha, double inBeta, double inlambda, int inNumIterations, int inTopWords, int inMaxTd)
             throws Exception
     {
-        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inNumIterations,
-                inTopWords, inExpName, "", 0);
+        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inlambda, inNumIterations,
+                inTopWords, inMaxTd, 10);
     }
-
-    public GPUDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU,int inFilterSize,  int inNumTopics,
-               double inAlpha, double inBeta, int inNumIterations, int inTopWords,
-               String inExpName, String pathToTAfile)
+    public GPU_PDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize, int inNumTopics,
+                    double inAlpha, double inBeta, double inlambda, int inNumIterations, int inTopWords, int inMaxTd, int inSearchTopK)
             throws Exception
     {
-        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inNumIterations,
-                inTopWords, inExpName, pathToTAfile, 0);
+        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inlambda, inNumIterations,
+                inTopWords, inMaxTd, inSearchTopK, "GPU_PDMMmodel");
     }
-
-    public GPUDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize,  int inNumTopics,
-               double inAlpha, double inBeta, int inNumIterations, int inTopWords,
-               String inExpName, int inSaveStep)
+    public GPU_PDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize, int inNumTopics,
+                    double inAlpha, double inBeta, double inlambda, int inNumIterations, int inTopWords,
+                    int inMaxTd, int inSearchTopK,String inExpName)
             throws Exception
     {
-        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inNumIterations,
-                inTopWords, inExpName, "", inSaveStep);
+        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inlambda, inNumIterations,
+                inTopWords,  inMaxTd, inSearchTopK,inExpName, "", 0);
     }
 
-    public GPUDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize, int inNumTopics,
-               double inAlpha, double inBeta, int inNumIterations, int inTopWords,
-               String inExpName, String pathToTAfile, int inSaveStep)
+    public GPU_PDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU,int inFilterSize,  int inNumTopics,
+                  double inAlpha, double inBeta, double inlambda,  int inNumIterations, int inTopWords,int inMaxTd, int inSearchTopK,
+                  String inExpName, String pathToTAfile)
+            throws Exception
+    {
+        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inlambda, inNumIterations,
+                inTopWords,inMaxTd, inSearchTopK, inExpName, pathToTAfile, 0);
+    }
+
+    public GPU_PDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize,  int inNumTopics,
+                  double inAlpha, double inBeta,double inlambda,  int inNumIterations, int inTopWords,int inMaxTd, int inSearchTopK,
+                  String inExpName, int inSaveStep)
+            throws Exception
+    {
+        this(pathToCorpus, pathToVector, inWeight, threshold_GPU, inFilterSize, inNumTopics, inAlpha, inBeta, inlambda, inNumIterations,
+                inTopWords,inMaxTd, inSearchTopK, inExpName, "", inSaveStep);
+    }
+
+    public GPU_PDMM(String pathToCorpus, String pathToVector, double inWeight, double threshold_GPU, int inFilterSize, int inNumTopics,
+                  double inAlpha, double inBeta, double inlambda,  int inNumIterations, int inTopWords, int inMaxTd, int inSearchTopK,
+                  String inExpName, String pathToTAfile, int inSaveStep)
             throws Exception
     {
 
         alpha = inAlpha;
         beta = inBeta;
+        lambda = inlambda;
         numTopics = inNumTopics;
         numIterations = inNumIterations;
         topWords = inTopWords;
+        weight = inWeight;
+        filterSize = inFilterSize;
+        maxTd = inMaxTd;
+        searchTopK = inSearchTopK;
         savestep = inSaveStep;
         expName = inExpName;
         orgExpName = expName;
-        weight = inWeight;
-        filterSize = inFilterSize;
-        threshold = threshold_GPU;
         corpusPath = pathToCorpus;
         this.pathToVector = pathToVector;
         folderPath = "results/";
@@ -157,6 +165,9 @@ public class GPUDMM {
 
         wordGPUFlag = new ArrayList<>();
 
+        ZdMap = new HashMap<Integer, Set<Integer>>();
+        assignmentListMap = new HashMap<Integer, int[]>();
+        docToWordIDListMap = new HashMap<Integer, int[]>();
 
         numDocuments = 0;
         numWordsInCorpus = 0;
@@ -195,41 +206,36 @@ public class GPUDMM {
                 numWordsInCorpus += document.length;
                 Corpus.add(document);
             }
+            br.close();
         }
         catch (Exception e) {
             e.printStackTrace();
         }
 
-
-
         vocabularySize = word2IdVocabulary.size(); // vocabularySize = indexWord
-        docTopicCount = new int[numTopics];
-        topicWordCount = new int[numTopics][vocabularySize];
-        sumTopicWordCount = new int[numTopics];
 
         phi = new double[numTopics][vocabularySize];
         pz = new double[numTopics];
-
-
+        pwz = new double[vocabularySize][numTopics];
+        TdArray = new int[Corpus.size()];
        // schema = new double[vocabularySize][vocabularySize];
         topicProbabilityGivenWord = new double[vocabularySize][numTopics];
 
         pdz = new double[numDocuments][numTopics];
-        multiPros = new double[numTopics];
-        for (int i = 0; i < numTopics; i++) {
-            multiPros[i] = 1.0 / numTopics;
-        }
 
-        alphaSum = numTopics * alpha;
-        betaSum = vocabularySize * beta;
-
-        assignmentList = new int[numDocuments];
         wordGPUInfo = new ArrayList<>();
         rg = new Random();
 
-        long startTime = System.currentTimeMillis();
+        // init the counter
+        nz = new double[numTopics];
+        nzw = new double[numTopics][vocabularySize];
+        Ck = new int[numTopics];
+        CkSum = 0;
 
-        schemaMap = computSchema(pathToVector);
+        long startTime = System.currentTimeMillis();
+        schemaMap = computSchema(pathToVector,threshold_GPU);
+
+
 
         initialize();
 
@@ -241,11 +247,105 @@ public class GPUDMM {
         System.out.println("Number of topics: " + numTopics);
         System.out.println("alpha: " + alpha);
         System.out.println("beta: " + beta);
-        System.out.println("weight: " + weight);
-        System.out.println("filterSize: " + filterSize);
         System.out.println("Number of sampling iterations: " + numIterations);
         System.out.println("Number of top topical words: " + topWords);
+    }
 
+
+
+    /**
+     * Randomly initialize topic assignments
+     */
+    public void initialize()
+            throws IOException
+    {
+        System.out.println("Randomly initializing topic assignments ...");
+
+        for (int d = 0; d < numDocuments; d++) {
+            int termIDArray[] = Corpus.get(d);
+
+            assignmentListMap.put(d, new int[termIDArray.length]);
+
+            ArrayList<Boolean> docWordGPUFlag = new ArrayList<>();
+            ArrayList<Map<Integer, Double>> docWordGPUInfo = new ArrayList<>();
+
+
+            for (int t = 0; t < termIDArray.length; t++) {
+
+                docWordGPUFlag.add(false); // initial for False for every word
+                docWordGPUInfo.add(new HashMap<Integer, Double>());
+
+            }
+            wordGPUFlag.add(docWordGPUFlag);
+            wordGPUInfo.add(docWordGPUInfo);
+            docToWordIDListMap.put(d, termIDArray);
+
+        }
+
+        init_GSDMM();
+        System.out.println("finish init_GPU-PDMM!");
+
+    }
+
+    public void normalCountWord(Integer topic, int word, Integer flag) {
+        nzw[topic][word] += flag;
+        nz[topic] += flag;
+    }
+
+    public void normalCountZd(Set<Integer> Zd, Integer flag){
+        for (int topic : Zd){
+            Ck[topic] += flag;
+            CkSum += flag;
+        }
+    }
+
+    public void init_GSDMM() {
+
+        double[] ptd = new double[maxTd];
+        double temp_factorial = 1.0;
+        for ( int i = 0; i < maxTd; i++ ){
+            temp_factorial *= (i+1);
+            ptd[i] = Math.pow(lambda, (double)(i+1)) * Math.exp(-lambda)/temp_factorial;
+        }
+
+        for (int i = 1; i < maxTd; i++) {
+            ptd[i] += ptd[i - 1];
+        }
+
+        for (int d = 0; d < numDocuments; d++) {
+
+            double u = rg.nextDouble() * ptd[ptd.length-1];
+            int td = -1;
+            for (int i = 0, length_ptd = ptd.length; i < length_ptd; i++){
+                if(Double.compare(ptd[i], u) >= 0){
+                    td = i+1;
+                    break;
+                }
+            }
+
+            assert(td>=1);
+            TdArray[d] = td;
+
+            Set<Integer> Zd = new HashSet<Integer>();
+            while ( Zd.size() != td ){
+                int u_z = rg.nextInt(numTopics);
+                Zd.add(u_z);
+            }
+            ZdMap.put(d, Zd);
+            normalCountZd(Zd, +1);
+
+            Object[] ZdList = new Object[td];
+            ZdList =  Zd.toArray();
+            int[] termIDArray = docToWordIDListMap.get(d);
+            for (int w = 0, num_word = termIDArray.length; w < num_word; w++){
+                int topic_index = rg.nextInt(td);
+                int topic = (int) ZdList[topic_index];
+                int word = termIDArray[w];
+                assignmentListMap.get(d)[w] = topic;
+                normalCountWord(topic, word, +1);
+            }
+        }
+        System.out.println("finish init_GPU_PDMM!");
     }
 
     public double computeSis(HashMap<Integer, float[]> wordMap, int i, int j)
@@ -261,7 +361,7 @@ public class GPUDMM {
         return sis;
     }
 
-    public Map<Integer, Map<Integer, Double>> computSchema(String pathToVector) {
+    public Map<Integer, Map<Integer, Double>> computSchema(String pathToVector, double threshold) {
 
         Map<Integer, Map<Integer, Double>> schemaMap = new HashMap<Integer, Map<Integer, Double>>();
         HashMap<Integer, float[]> wordMap = new HashMap<Integer, float[]>();
@@ -294,12 +394,18 @@ public class GPUDMM {
             br1.close();
 
 
-
+           // System.out.println("vocabularySize:" + vocabularySize);
             double count = 0.0;
             for (int i = 0; i < vocabularySize; i++) {
+
+                if(!wordMap.containsKey(i) )
+                    continue;
+               // System.out.println("------"+i+"---------");
                 Map<Integer, Double> tmpMap = new HashMap<Integer, Double>();
                 for (int j = 0; j < vocabularySize; j++) {
-                    double v = computeSis(wordMap,i,j);
+                    if(!wordMap.containsKey(j) )
+                        continue;
+                    double v = computeSis(wordMap, i,j);
                     if (Double.compare(v, threshold) > 0) {
                         tmpMap.put(j, v);
                     }
@@ -324,55 +430,51 @@ public class GPUDMM {
         }
     }
 
-
-    /**
-     * Randomly initialize topic assignments
-     */
-    public void initialize()
-            throws IOException
-    {
-        System.out.println("Randomly initializing topic assignments ...");
-
-
-
-        for (int d = 0; d < numDocuments; d++) {
-            int termIDArray[] = Corpus.get(d);
-
-            ArrayList<Boolean> docWordGPUFlag = new ArrayList<>();
-            ArrayList<Map<Integer, Double>> docWordGPUInfo = new ArrayList<>();
-            // int[] termIDArray = docToWordIDList.get(d);
-            ArrayList<int[]> d_assignment_list = new ArrayList<int[]>();
-
-            int topic = FuncUtils.nextDiscrete(multiPros); // Sample a topic
-            assignmentList[d] = topic;
-            docTopicCount[topic] += 1;
-            for (int t = 0; t < termIDArray.length; t++) {
-                int termID = termIDArray[t];
-
-                topicWordCount[topic][termID] += 1;
-                sumTopicWordCount[topic] += 1;
-                docTopicCount[topic] += 1;
-
-                docWordGPUFlag.add(false); // initial for False for every word
-                docWordGPUInfo.add(new HashMap<Integer, Double>());
-
-            }
-            wordGPUFlag.add(docWordGPUFlag);
-            wordGPUInfo.add(docWordGPUInfo);
-
+    private static int factorial(int n){
+        int value = 1;
+        while ( n > 0 ){
+            value *= n;
+            n--;
         }
-        System.out.println("finish init_GPU!");
 
+        return value;
+    }
+    private int[][] ZdSearchSize(){
+        int count = 0;
+        int[] boundary = new int[maxTd];
+        for ( int i = 0; i < maxTd; i++ ){
+            int temp = 1;
+            int factorial = factorial(i+1);
+            for ( int j = 0; j < i+1; j++ ){
+                temp *= (searchTopK - j);
+            }
+
+            count += temp/factorial;
+            boundary[i] = count;
+        }
+
+        int[][] array = new int[count][];
+        for ( int i = 0; i < count; i++ ){
+            for ( int j = 0; j < boundary.length; j++ ){
+                if ( i < boundary[j] ){
+                    array[i] = new int[j+1];
+                    break;
+                }
+            }
+        }
+
+        return array;
     }
 
     public void compute_phi() {
         for (int i = 0; i < numTopics; i++) {
             double sum = 0.0;
             for (int j = 0; j < vocabularySize; j++) {
-                sum += topicWordCount[i][j];
+                sum += nzw[i][j];
             }
+
             for (int j = 0; j < vocabularySize; j++) {
-                phi[i][j] = (topicWordCount[i][j] + beta) / (sum + betaSum);
+                phi[i][j] = (nzw[i][j] + beta) / (sum + vocabularySize * beta);
             }
         }
     }
@@ -380,36 +482,98 @@ public class GPUDMM {
     public void compute_pz() {
         double sum = 0.0;
         for (int i = 0; i < numTopics; i++) {
-            sum += sumTopicWordCount[i];
+            sum += nz[i];
         }
+
         for (int i = 0; i < numTopics; i++) {
-            pz[i] = 1.0 * (sumTopicWordCount[i] + alpha) / (sum + alphaSum);
+            pz[i] = 1.0 * (nz[i] + alpha) / (sum + numTopics * alpha);
         }
     }
 
-    /**
-     * update the p(z|w) for every iteration
-     */
-    public void updateTopicProbabilityGivenWord() {
-        // TODO we should update pz and phi information before
-        compute_pz();
-        compute_phi();  //update p(w|z)
+    public void compute_pzd() {
+        /** calculate P(z|w) **/
         for (int i = 0; i < vocabularySize; i++) {
             double row_sum = 0.0;
             for (int j = 0; j < numTopics; j++) {
-                topicProbabilityGivenWord[i][j] = pz[j] * phi[j][i];
-                row_sum += topicProbabilityGivenWord[i][j];
+                pwz[i][j] = pz[j] * phi[j][i];
+                row_sum += pwz[i][j];
             }
+
             for (int j = 0; j < numTopics; j++) {
-                topicProbabilityGivenWord[i][j] = topicProbabilityGivenWord[i][j] / row_sum;  //This is p(z|w)
+                pwz[i][j] = pwz[i][j] / row_sum;
             }
         }
+
+        for (int i = 0; i < numDocuments; i++) {
+            int[] doc_word_id = docToWordIDListMap.get(i);
+            double row_sum = 0.0;
+            for (int j = 0; j < numTopics; j++) {
+                pdz[i][j] = 0;
+                for (int wordID : doc_word_id) {
+                    pdz[i][j] += pwz[wordID][j];
+                }
+                row_sum += pdz[i][j];
+            }
+
+            for (int j = 0; j < numTopics; j++) {
+                pdz[i][j] = pdz[i][j] / row_sum;
+            }
+        }
+    }
+
+    public int[][] getTopKTopics(int[][] docTopKTopics){
+        Set<Integer> topKTopics = new HashSet<Integer>();
+        int minIndex = -1;
+        double minValue = 2;
+        for(int d = 0; d < numDocuments; d++){
+            minValue = 2;
+            minIndex = -1;
+            topKTopics.clear();
+
+            for(int k = 0; k < numTopics; k++){
+                if ( topKTopics.size() < searchTopK ){
+                    topKTopics.add(k);
+                    if ( Double.compare(minValue, pdz[d][k]) > 0 ){
+                        minValue = pdz[d][k];
+                        minIndex = k;
+                    }
+                } else {
+                    if (Double.compare(minValue, pdz[d][k]) < 0) {
+                        topKTopics.remove(minIndex);
+                        topKTopics.add(k);
+                        minIndex = minPDZTopicIndex(d, topKTopics);
+                        minValue = pdz[d][minIndex];
+                    }
+                }
+            }
+
+            int index = 0;
+            for ( int topic : topKTopics ){
+                docTopKTopics[d][index++] = topic;
+            }
+        }
+
+        return docTopKTopics;
+    }
+
+    private int minPDZTopicIndex(int doc, Set<Integer> topics){
+        double min = 2;
+        int minIndex = -1;
+        for ( int topic : topics ){
+            if ( Double.compare(min, pdz[doc][topic]) > 0 ){
+                min = pdz[doc][topic];
+                minIndex = topic;
+            }
+        }
+
+        return minIndex;
     }
 
     public double findTopicMaxProbabilityGivenWord(int wordID) {
         double max = -1.0;
+        double tmp = -1.0;
         for (int i = 0; i < numTopics; i++) {
-            double tmp = topicProbabilityGivenWord[wordID][i];
+            tmp = topicProbabilityGivenWord[wordID][i];
             if (Double.compare(tmp, max) > 0) {
                 max = tmp;
             }
@@ -426,138 +590,329 @@ public class GPUDMM {
      * @param docID
      * @param newTopic
      */
-    public void updateWordGPUFlag(int docID, int newTopic) {
+    public void updateWordGPUFlag(int docID, int word, int index, int newTopic) {
         // we calculate the p(t|w) and p_max(t|w) and use the ratio to decide we
         // use gpu for the word under this topic or not
-        int[] termIDArray = Corpus.get(docID);
-        ArrayList<Boolean> docWordGPUFlag = new ArrayList<>();
-        for (int t = 0; t < termIDArray.length; t++) {
-
-            int termID = termIDArray[t];
-            double maxProbability = findTopicMaxProbabilityGivenWord(termID);
-            double ratio = getTopicProbabilityGivenWord(newTopic, termID) / maxProbability;
-
-            double a = rg.nextDouble();
-            docWordGPUFlag.add(Double.compare(ratio, a) > 0);
+        double maxProbability = findTopicMaxProbabilityGivenWord(word);
+        double ratio = getTopicProbabilityGivenWord(newTopic, word) / maxProbability;
+        double a = rg.nextDouble();
+        if(Double.compare(ratio, a) > 0){
+            wordGPUFlag.get(docID).set(index, true);
         }
-        wordGPUFlag.set(docID, docWordGPUFlag);
+        else{
+            wordGPUFlag.get(docID).set(index, false);
+        }
+
     }
 
-    public void ratioCount(Integer topic, Integer docID, int[] termIDArray, int flag) {
-       // System.out.println("Topic:"+ topic);
+    public void ratioCount(Integer topic, Integer docID, int word, int index, int flag) {
+        nzw[topic][word] += flag;
+        nz[topic] += flag;
 
-
-        docTopicCount[topic] += flag;
-        for (int t = 0; t < termIDArray.length; t++) {
-            int wordID = termIDArray[t];
-            topicWordCount[topic][wordID] += flag;
-            sumTopicWordCount[topic] += flag;
-        }
         // we update gpu flag for every document before it change the counter
         // when adding numbers
         if (flag > 0) {
-            updateWordGPUFlag(docID, topic);
-            for (int t = 0; t < termIDArray.length; t++) {
-                int wordID = termIDArray[t];
-                boolean gpuFlag = wordGPUFlag.get(docID).get(t);
-                Map<Integer, Double> gpuInfo = new HashMap<>();
-                if (gpuFlag) { // do gpu count
-                    if (schemaMap.containsKey(wordID)) {
-                        Map<Integer, Double> valueMap = schemaMap.get(wordID);
-                        // update the counter
-                        for (Map.Entry<Integer, Double> entry : valueMap.entrySet()) {
-                            Integer k = entry.getKey();
-                            double v = weight;
-                            topicWordCount[topic][k] += v;
-                            sumTopicWordCount[topic] += v;
-                            gpuInfo.put(k, v);
-                        } // end loop for similar words
-                    } else { // schemaMap don't contain the word
-
-                        // the word doesn't have similar words, the infoMap is empty
-                        // we do nothing
-                    }
-                } else { // the gpuFlag is False
-                    // it means we don't do gpu, so the gouInfo map is empty
-                }
-                wordGPUInfo.get(docID).set(t, gpuInfo); // we update the gpuinfo
-                // map
-            }
-        } else { // we do subtraction according to last iteration information
-            for (int t = 0; t < termIDArray.length; t++) {
-                Map<Integer, Double> gpuInfo = wordGPUInfo.get(docID).get(t);
-                int wordID = termIDArray[t];
-                // boolean gpuFlag = wordGPUFlag.get(docID).get(t);
-                if (gpuInfo.size() > 0) {
-                    for (int similarWordID : gpuInfo.keySet()) {
-                        // double v = gpuInfo.get(similarWordID);
+            updateWordGPUFlag(docID, word, index, topic);
+            boolean gpuFlag = wordGPUFlag.get(docID).get(index);
+            Map<Integer, Double> gpuInfo = new HashMap<Integer, Double>();
+            if (gpuFlag) { // do gpu count
+                if (schemaMap.containsKey(word)) {
+                    Map<Integer, Double> valueMap = schemaMap.get(word);
+                    // update the counter
+                    for (Map.Entry<Integer, Double> entry : valueMap.entrySet()) {
+                        int k = entry.getKey();
                         double v = weight;
-                        topicWordCount[topic][similarWordID] -= v;
-                        sumTopicWordCount[topic] -= v;
-                        // if(Double.compare(0, nzw[topic][wordID]) > 0){
-                        // System.out.println( nzw[topic][wordID]);
-                        // }
+                        nzw[topic][k] += v;
+                        nz[topic] += v;
+                        gpuInfo.put(k, v);
+                    } // end loop for similar words
+                    //		valueMap.clear();
+                } else { // schemaMap don't contain the word
+
+                    // the word doesn't have similar words, the infoMap is empty
+                    // we do nothing
+                }
+            } else { // the gpuFlag is False
+                // it means we don't do gpu, so the gouInfo map is empty
+            }
+            //		wordGPUInfo.get(docID).get(index).clear();
+            wordGPUInfo.get(docID).set(index, gpuInfo); // we update the gpuinfo
+            // map
+        } else { // we do subtraction according to last iteration information
+            Map<Integer, Double> gpuInfo = wordGPUInfo.get(docID).get(index);
+            // boolean gpuFlag = wordGPUFlag.get(docID).get(t);
+            if (gpuInfo.size() > 0) {
+                for (int similarWordID : gpuInfo.keySet()) {
+                    // double v = gpuInfo.get(similarWordID);
+                    double v = weight;
+                    nzw[topic][similarWordID] -= v;
+                    nz[topic] -= v;
+                    // if(Double.compare(0, nzw[topic][wordID]) > 0){
+                    // System.out.println( nzw[topic][wordID]);
+                    // }
+                }
+            }
+        }
+    }
+
+    private static int enumerateOneTopicSetting(int[][] topicSettingArray,
+                                                int[] topKTopics, int index){
+        for ( int i = 0; i < topKTopics.length; i++ ){
+            topicSettingArray[index++][0] = topKTopics[i];
+        }
+
+        return index;
+    }
+
+    private static int enumerateTwoTopicSetting(int[][] topicSettingArray,
+                                                int[] topKTopics, int index){
+        for ( int i = 0; i < topKTopics.length; i++ ){
+            for ( int j = i+1; j < topKTopics.length; j++ ){
+                topicSettingArray[index][0] = topKTopics[i];
+                topicSettingArray[index++][1] = topKTopics[j];
+            }
+        }
+
+        return index;
+    }
+
+    private static int enumerateThreeTopicSetting(int[][] topicSettingArray,
+                                                  int[] topKTopics, int index){
+        for ( int i = 0; i < topKTopics.length; i++ ){
+            for ( int j = i+1; j < topKTopics.length; j++ ){
+                for (int n = j + 1; n < topKTopics.length; n++) {
+                    topicSettingArray[index][0] = topKTopics[i];
+                    topicSettingArray[index][1] = topKTopics[j];
+                    topicSettingArray[index++][2] = topKTopics[n];
+                }
+            }
+        }
+
+        return index;
+    }
+
+    private static int enumerateFourTopicSetting(int[][] topicSettingArray,
+                                                 int[] topKTopics, int index){
+        for ( int i = 0; i < topKTopics.length; i++ ){
+            for ( int j = i+1; j < topKTopics.length; j++ ){
+                for (int n = j + 1; n < topKTopics.length; n++) {
+                    for (int m = n +1; m < topKTopics.length; m++){
+                        topicSettingArray[index][0] = topKTopics[i];
+                        topicSettingArray[index][1] = topKTopics[j];
+                        topicSettingArray[index][2] = topKTopics[n];
+                        topicSettingArray[index++][3] = topKTopics[m];
                     }
                 }
             }
         }
 
+        return index;
     }
 
+    private static int[][] enumerateTopicSetting(int[][] topicSettingArray,
+                                                 int[] topKTopics, int maxTd) {
+        // TODO Auto-generated method stub
+        int index = 0;
+        if ( maxTd > 0)
+            index = enumerateOneTopicSetting(topicSettingArray, topKTopics, index);
+
+        if ( maxTd > 1)
+            index = enumerateTwoTopicSetting(topicSettingArray, topKTopics, index);
+
+        if ( maxTd > 2)
+            index = enumerateThreeTopicSetting(topicSettingArray, topKTopics, index);
+
+        if ( maxTd > 3)
+            index = enumerateFourTopicSetting(topicSettingArray, topKTopics, index);
+
+        return topicSettingArray;
+    }
+
+    private static long getCurrTime() {
+        return System.currentTimeMillis();
+    }
+
+    /* Create a new memory block like two dimensional array is very
+		 * expensive in Java. We need to reuse the memory block instead of
+		 * creating a new one every time*/
     public void inference()
             throws IOException
     {
 
         writeDictionary();
 
-        System.out.println("Running Gibbs sampling inference: ");
+        long _s = getCurrTime();
 
-        long startTime = System.currentTimeMillis();
+        int[][] topicSettingArray = ZdSearchSize();
+        int[][] docTopKTopics = new int[numDocuments][searchTopK];
+        double[] Ptd_Zd = new double[topicSettingArray.length];
+        int[] termIDArray = null;
+        int[][] mediateSamples = null;
+
+        Map<Integer, int[][]> mediateSampleMap =
+                new HashMap<Integer, int[][]>();
+
+        for ( int i = 0; i < numDocuments; i++ ){
+            termIDArray = docToWordIDListMap.get(i);
+            mediateSamples =
+                    new int[topicSettingArray.length][termIDArray.length];
+            mediateSampleMap.put(i, mediateSamples);
+        }
+
+        System.out.println("Running Gibbs sampling inference: ");
 
         for (int iter = 1; iter <= numIterations; iter++) {
 
             if(iter%50==0)
-                System.out.println("\tSampling iteration: " + (iter));
-            // System.out.println("\t\tPerplexity: " + computePerplexity());
+                System.out.print(" " + (iter));
 
-            // getTopWordsUnderEachTopicGivenCurrentMarkovStatus();
-            updateTopicProbabilityGivenWord();
-            for (int s = 0; s < Corpus.size(); s++) {
 
-                int[] termIDArray = Corpus.get(s);
-                int preTopic = assignmentList[s];
 
-                ratioCount(preTopic, s, termIDArray, -1);
+            //		if don't use heu strategy,please don't Use below three code line
+            compute_phi();
+            compute_pz();
+            compute_pzd();
 
-                //double[] pzDist = new double[numTopics];
-                for (int topic = 0; topic < numTopics; topic++) {
-                    double pz = 1.0 * (docTopicCount[topic] + alpha) / (numDocuments - 1 + alphaSum);
-                    double value = 1.0;
-                    double logSum = 0.0;
-                    for (int t = 0; t < termIDArray.length; t++) {
-                        int termID = termIDArray[t];
-                        value *= (topicWordCount[topic][termID] + beta) / (sumTopicWordCount[topic] + betaSum + t);
-                        // we do not use log, it is a little slow
-                        // logSum += Math.log(1.0 * (nzw[topic][termID] + beta) / (nz[topic] + vocSize * beta + t));
-                    }
-//					value = pz * Math.exp(logSum);
-                    value = pz * value;
-                    multiPros[topic] = value;
+            docTopKTopics = getTopKTopics(docTopKTopics);
+
+            for (int s = 0; s < numDocuments; s++) {
+                termIDArray = docToWordIDListMap.get(s);
+                int num_word = termIDArray.length;
+                Set<Integer> preZd = ZdMap.get(s);
+                normalCountZd(preZd, -1);
+                mediateSamples = mediateSampleMap.get(s);
+
+                for (int w = 0; w < num_word; w++){
+                    //		normalCountWord(assignmentListMap.get(s)[w], termIDArray[w], -1);
+                    //		ratioCountNofilter(assignmentListMap.get(s)[w], s, termIDArray[w], w, -1);
+                    ratioCount(assignmentListMap.get(s)[w], s, termIDArray[w], w, -1);
                 }
 
-                int newTopic = FuncUtils.nextDiscrete(multiPros);
+                topicSettingArray = enumerateTopicSetting(
+                        topicSettingArray, docTopKTopics[s], maxTd);
+                int length_topicSettingArray = topicSettingArray.length;
 
+                for(int round = 0; round < length_topicSettingArray; round++){
+                    int[] topicSetting = topicSettingArray[round];
+                    int length_topicSetting = topicSetting.length;
 
-                // update
-                assignmentList[s] = newTopic;
-                ratioCount(newTopic, s, termIDArray, +1);
+                    for (int w = 0; w < num_word; w++){
+                        int wordID = termIDArray[w];
+                        double[] pzDist = new double[length_topicSetting];
+                        for (int index = 0; index < length_topicSetting; index++) {
+                            int topic = (int) topicSetting[index];
+                            //		System.out.println(nzw[topic][wordID]);
+                            double pz = 1.0 * (nzw[topic][wordID] + beta) / (nz[topic] +  beta*vocabularySize);
+                            pzDist[index] = pz;
+                        }
 
+                        for (int i = 1; i < length_topicSetting; i++) {
+                            pzDist[i] += pzDist[i - 1];
+                        }
+
+                        double u = rg.nextDouble() * pzDist[length_topicSetting - 1];
+                        int newTopic = -1;
+                        for (int i = 0; i < length_topicSetting; i++) {
+                            if (Double.compare(pzDist[i], u) >= 0) {
+                                newTopic = topicSetting[i];
+                                break;
+                            }
+                        }
+                        // update
+                        mediateSamples[round][w] = newTopic;
+                        //	normalCountWord(newTopic, wordID, +1);
+                        //	ratioCountNofilter(newTopic, s, wordID, w, +1);
+                        ratioCount(newTopic, s, wordID, w, +1);
+                    }
+
+                    for (int w = 0; w < num_word; w++){
+                        int wordID = termIDArray[w];
+                        //	normalCountWord(mediateSamples[round][w], wordID, -1);
+                        //	ratioCountNofilter(mediateSamples[round][w], s, wordID, w, -1);
+                        ratioCount(mediateSamples[round][w], s, wordID, w, -1);
+                    }
+                }
+
+                for (int round = 0; round < length_topicSettingArray; round++){
+                    int[] topicSetting = topicSettingArray[round];
+                    int length_topicSetting = topicSetting.length;
+                    double p1 = Math.pow(lambda, topicSetting.length) * Math.exp(-lambda);
+                    double p21 = 1.0;
+                    double p22 = 1.0;
+
+                    for(int k : topicSetting){
+                        p21*= (alpha + Ck[k]);
+                    }
+
+                    for(int i = 0; i < length_topicSetting; i++){
+                        p22 *= (CkSum + numTopics*alpha - i);
+                    }
+                    double p2 = p21/p22;
+                    double p31 = 1.0;
+                    double p32 = 1.0;
+                    Map<Integer, Map<Integer, Integer>> Ndkt =
+                            getNdkt_Zd(s, topicSetting, mediateSamples[round]);
+                    Map<Integer, Integer> Ndk =
+                            getNdk_Zd(s, topicSetting, mediateSamples[round]);
+                    for(int k: topicSetting){
+                        Set<Integer> dk =
+                                getdk_Zd(s, mediateSamples[round], k);
+                        //	System.out.println(dk);
+                        for(int t: dk){
+                            for (int i = 0; i < Ndkt.get(k).get(t); i++){
+                                p31 *= (beta+nzw[k][t]+Ndkt.get(k).get(t)-i);
+                            }
+                        }
+                        for(int j = 0; j < Ndk.get(k); j++){
+                            p32 *= (nz[k]+beta*vocabularySize+Ndk.get(k)-j);
+                        }
+                        dk.clear();
+
+                    }
+                    Ndkt.clear();
+                    Ndk.clear();
+                    double p3 = p31/p32;
+                    Ptd_Zd[round] = p1*p2*p3;
+                }
+
+                for(int i = 1; i < length_topicSettingArray; i++){
+                    Ptd_Zd[i]+=Ptd_Zd[i-1];
+                }
+
+                double u_ptdzd = rg.nextDouble()*Ptd_Zd[length_topicSettingArray-1];
+                int new_index = -1;
+                for (int i = 0; i < length_topicSettingArray; i++) {
+                    if (Double.compare(Ptd_Zd[i], u_ptdzd) >= 0) {
+                        new_index = i;
+                        break;
+                    }
+                }
+
+                TdArray[s] = topicSettingArray[new_index].length;
+                preZd.clear();
+                for(int k: topicSettingArray[new_index]){
+                    preZd.add(k);
+                }
+
+                normalCountZd(preZd, +1);
+                System.arraycopy(
+                        mediateSamples[new_index], 0,
+                        assignmentListMap.get(s), 0, mediateSamples[new_index].length);
+                for(int w = 0; w < termIDArray.length; w++){
+                    //	normalCountWord(mediateSamples[new_index][w], termIDArray[w], +1);
+                    //	ratioCountNofilter(mediateSamples[new_index][w], s, termIDArray[w], w, +1);
+                    ratioCount(mediateSamples[new_index][w], s, termIDArray[w], w, +1);
+                }
             }
+
+
         }
         expName = orgExpName;
 
-        iterTime =System.currentTimeMillis()-startTime;
+        long _e = getCurrTime();
+        iterTime = (_e - _s) ;
 
+        System.out.println();
         System.out.println("Writing output from the last sample ...");
         write();
 
@@ -565,21 +920,197 @@ public class GPUDMM {
 
     }
 
+    public void writeTopTopicalWords()
+            throws IOException
+    {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(folderPath
+                + expName + ".topWords"));
+
+        for (int tIndex = 0; tIndex < numTopics; tIndex++) {
+            //writer.write("Topic" + new Integer(tIndex) + ":");
+
+
+
+            Map<Integer, Double> wordCount = new TreeMap<Integer, Double>();
+            for (int wIndex = 0; wIndex < vocabularySize; wIndex++) {
+                wordCount.put(wIndex, nzw[tIndex][wIndex]);
+            }
+            wordCount = FuncUtils.sortByValueDescending(wordCount);
+
+            Set<Integer> mostLikelyWords = wordCount.keySet();
+            int count = 0;
+            for (Integer index : mostLikelyWords) {
+                if (count < topWords) {
+                    double pro = (nzw[tIndex][index] + beta)
+                            / (nz[tIndex] + beta*vocabularySize);
+                    pro = Math.round(pro * 1000000.0) / 1000000.0;
+                    writer.write(id2WordVocabulary.get(index) + " ");
+                    count += 1;
+                }
+                else {
+                    writer.write("\n");
+                    break;
+                }
+            }
+        }
+        writer.close();
+    }
+
+    public void writeDocTopicPros()
+            throws IOException
+    {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(folderPath
+                + expName + ".theta"));
+
+        /** calculate P(z|w) **/
+        for (int i = 0; i < vocabularySize; i++) {
+            double row_sum = 0.0;
+            for (int j = 0; j < numTopics; j++) {
+                pwz[i][j] = pz[j] * phi[j][i];
+                row_sum += pwz[i][j];
+            }
+
+            for (int j = 0; j < numTopics; j++) {
+                pwz[i][j] = pwz[i][j] / row_sum;
+            }
+        }
+
+        for (int i = 0; i < numDocuments; i++) {
+            int[] doc_word_id = docToWordIDListMap.get(i);
+            double row_sum = 0.0;
+            for (int j = 0; j < numTopics; j++) {
+                pdz[i][j] = 0;
+                for (int wordID : doc_word_id) {
+                    pdz[i][j] += pwz[wordID][j];
+                }
+                row_sum += pdz[i][j];
+            }
+
+            for (int j = 0; j < numTopics; j++) {
+                pdz[i][j] = pdz[i][j] / row_sum;
+                writer.write( pdz[i][j] + " ");
+            }
+
+            writer.write("\n");
+        }
+
+
+        writer.close();
+    }
+
+    public void writeTopicAssignments()
+            throws IOException
+    {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(folderPath
+                + expName + ".topicAssignments"));
+        for (int dIndex = 0; dIndex < numDocuments; dIndex++) {
+            int docSize = Corpus.get(dIndex).length;
+            for (int wIndex = 0; wIndex < docSize; wIndex++) {
+                writer.write(assignmentListMap.get(dIndex)[wIndex] + " ");
+            }
+            writer.write("\n");
+        }
+        writer.close();
+    }
+
+    public void writeTopicWordPros()
+            throws IOException
+    {
+        BufferedWriter writer = new BufferedWriter(new FileWriter(folderPath
+                + expName + ".phi"));
+
+        for (int i = 0; i < numTopics; i++) {
+
+            for (int j = 0; j < vocabularySize; j++) {
+                double pro = (nzw[i][j] + beta) / (nz[i] + vocabularySize * beta);
+                writer.write(pro + " ");
+            }
+            writer.write("\n");
+        }
+
+        writer.close();
+    }
+
+    public void write()
+            throws IOException
+    {
+        writeTopTopicalWords();
+        writeDocTopicPros();
+        writeTopicAssignments();
+        writeTopicWordPros();
+        writeParameters();
+    }
+
+
+    public Set<Integer> getdk_Zd(
+            int docID, int[] assignment, int topic){
+        Set<Integer> dk = new HashSet<Integer>();
+        int[] termIDArray = docToWordIDListMap.get(docID);
+        for(int i = 0, length = assignment.length; i < length; i++){
+            int z = assignment[i];
+            if (z==topic){
+                dk.add(termIDArray[i]);
+            }
+        }
+        return dk;
+    }
+
+    public Map<Integer, Map<Integer, Integer>> getNdkt_Zd(
+            int docID, int[] ZdList, int[] assignment){
+        Map<Integer, Map<Integer, Integer>> Ndkt = new HashMap<Integer,Map<Integer, Integer>>();
+        for(int k : ZdList){
+            Ndkt.put(k, new HashMap<Integer, Integer>());
+            //		System.out.println(ZdList.length);
+        }
+        int[] termIDArray = docToWordIDListMap.get(docID);
+        for(int i = 0, length = termIDArray.length; i < length; i++){
+            int word = termIDArray[i];
+            int topic = assignment[i];
+            //	System.out.println(topic);
+            if (Ndkt.get(topic).containsKey(word)){
+                Ndkt.get(topic).put(word, Ndkt.get(topic).get(word)+1);
+            }
+            else{
+                Ndkt.get(topic).put(word, 1);
+            }
+        }
+        return Ndkt;
+    }
+
+    public Map<Integer, Integer> getNdk_Zd(
+            int docID, int[] ZdList, int[] assignment){
+        Map<Integer, Integer> Ndk = new HashMap<Integer,Integer>();
+        for(int k : ZdList){
+            Ndk.put(k,0);
+            //		System.out.println(ZdList.length);
+        }
+        int[] termIDArray = docToWordIDListMap.get(docID);
+        for(int i = 0, length = termIDArray.length; i < length; i++){
+            int word = termIDArray[i];
+            int topic = assignment[i];
+            //	System.out.println(topic);
+            Ndk.put(topic, Ndk.get(topic)+1);
+        }
+        return Ndk;
+    }
+
     public void writeParameters()
             throws IOException
     {
         BufferedWriter writer = new BufferedWriter(new FileWriter(folderPath
                 + expName + ".paras"));
-        writer.write("-model" + "\t" + "GPUDMM");
+        writer.write("-model" + "\t" + "GPU_PDMM");
         writer.write("\n-corpus" + "\t" + corpusPath);
         writer.write("\n-ntopics" + "\t" + numTopics);
         writer.write("\n-alpha" + "\t" + alpha);
         writer.write("\n-beta" + "\t" + beta);
+        writer.write("\n-lambda" + "\t" + lambda);
         writer.write("\n-threshold" + "\t" + threshold);
         writer.write("\n-weight" + "\t" + weight);
         writer.write("\n-filterSize" + "\t" + filterSize);
         writer.write("\n-niters" + "\t" + numIterations);
         writer.write("\n-twords" + "\t" + topWords);
+        writer.write("\n-" + "\t" + topWords);
         writer.write("\n-name" + "\t" + expName);
         if (tAssignsFilePath.length() > 0)
             writer.write("\n-initFile" + "\t" + tAssignsFilePath);
@@ -603,115 +1134,12 @@ public class GPUDMM {
         writer.close();
     }
 
-    public void writeTopTopicalWords()
-            throws IOException
-    {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(folderPath
-                + expName + ".topWords"));
-
-        for (int tIndex = 0; tIndex < numTopics; tIndex++) {
-            //writer.write("Topic" + new Integer(tIndex) + ":");
-
-            Map<Integer, Integer> wordCount = new TreeMap<Integer, Integer>();
-            for (int wIndex = 0; wIndex < vocabularySize; wIndex++) {
-                wordCount.put(wIndex, topicWordCount[tIndex][wIndex]);
-            }
-            wordCount = FuncUtils.sortByValueDescending(wordCount);
-
-            Set<Integer> mostLikelyWords = wordCount.keySet();
-            int count = 0;
-            for (Integer index : mostLikelyWords) {
-                if (count < topWords) {
-                    double pro = (topicWordCount[tIndex][index] + beta)
-                            / (sumTopicWordCount[tIndex] + betaSum);
-                    pro = Math.round(pro * 1000000.0) / 1000000.0;
-                    writer.write(id2WordVocabulary.get(index) + " ");
-                    count += 1;
-                }
-                else {
-                    writer.write("\n");
-                    break;
-                }
-            }
-        }
-        writer.close();
-    }
-
-    public void writeDocTopicPros()
-            throws IOException
-    {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(folderPath
-                + expName + ".theta"));
-
-        for (int i = 0; i < numDocuments; i++) {
-            int docSize = Corpus.get(i).length;
-            double sum = 0.0;
-            for (int tIndex = 0; tIndex < numTopics; tIndex++) {
-                multiPros[tIndex] = (docTopicCount[tIndex] + alpha);
-                for (int wIndex = 0; wIndex < docSize; wIndex++) {
-                    int word = Corpus.get(i)[wIndex];
-                    multiPros[tIndex] *= (topicWordCount[tIndex][word] + beta)
-                            / (sumTopicWordCount[tIndex] + betaSum);
-                }
-                sum += multiPros[tIndex];
-            }
-            for (int tIndex = 0; tIndex < numTopics; tIndex++) {
-                writer.write((multiPros[tIndex] / sum) + " ");
-            }
-            writer.write("\n");
-        }
-        writer.close();
-    }
-
-    public void writeTopicAssignments()
-            throws IOException
-    {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(folderPath
-                + expName + ".topicAssignments"));
-        for (int dIndex = 0; dIndex < numDocuments; dIndex++) {
-            int docSize = Corpus.get(dIndex).length;
-            int topic = assignmentList[dIndex];
-            for (int wIndex = 0; wIndex < docSize; wIndex++) {
-                writer.write(topic + " ");
-            }
-            writer.write("\n");
-        }
-        writer.close();
-    }
-
-    public void writeTopicWordPros()
-            throws IOException
-    {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(folderPath
-                + expName + ".phi"));
-        for (int i = 0; i < numTopics; i++) {
-            for (int j = 0; j < vocabularySize; j++) {
-                double pro = (topicWordCount[i][j] + beta)
-                        / (sumTopicWordCount[i] + betaSum);
-                writer.write(pro + " ");
-            }
-            writer.write("\n");
-        }
-        writer.close();
-    }
-
-    public void write()
-            throws IOException
-    {
-        writeTopTopicalWords();
-        writeDocTopicPros();
-        writeTopicAssignments();
-        writeTopicWordPros();
-        writeParameters();
-    }
-
     public static void main(String args[])
             throws Exception
     {
-        GPUDMM gpudmm = new GPUDMM("dataset/corpus.txt","dataset/glove.6B.200d.txt", 0.7, 0.1, 10, 7, 0.1,
-                0.1, 50, 20, "testGPUDMM");
-        gpudmm.inference();
+        GPU_PDMM gpupdmm = new GPU_PDMM("dataset/Tweet.txt","dataset/glove.6B.200d.txt", 0.7, 0.1, 20, 100, 0.1,
+                0.1, 1.5, 500, 10, 3, 10, "TweetGPU_PDMM");
+
+        gpupdmm.inference();
     }
-
-
 }
