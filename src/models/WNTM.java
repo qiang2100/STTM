@@ -15,7 +15,10 @@ import java.util.*;
  *
  * @author: Jipeng Qiang on 18/6/6.
  */
-public class WNTM {
+
+
+public class WNTM
+{
 
     public double alpha; // Hyper-parameter alpha
     public double beta; // Hyper-parameter alpha
@@ -31,7 +34,7 @@ public class WNTM {
     Map<Integer, Map<Integer, Double>> wordGraph = new HashMap<Integer, Map<Integer, Double>>();
     Map<Integer,Integer> wordDegree = new HashMap<Integer,Integer>();
     public List<List<Integer>> pseudo_corpus; // Word ID-based corpus
-    public List<List<Integer>> topicAssignments; // Topics assignments for words
+    public int z[][]; // Topics assignments for words
     // in the corpus
     public int numDocuments; // Number of documents in the corpus
     public int numPseudoDocuments;
@@ -47,7 +50,7 @@ public class WNTM {
     // Given a document: number of its words assigned to each topic
     public int[][] pseudocTopicCount;
     // Number of words in every document
-    public int[] sumPseudocTopicCount;
+    //public int[] sumPseudocTopicCount;
     // numTopics * vocabularySize matrix
     // Given a topic: number of times a word type assigned to the topic
     public int[][] topicWordCount;
@@ -179,7 +182,7 @@ public class WNTM {
         numPseudoDocuments = pseudo_corpus.size();
         pseudocTopicCount = new int[numPseudoDocuments][numTopics];
         topicWordCount = new int[numTopics][vocabularySize];
-        sumPseudocTopicCount= new int[numPseudoDocuments];
+        //sumPseudocTopicCount= new int[numPseudoDocuments];
         sumTopicWordCount = new int[numTopics];
 
         phi = new double[numTopics][vocabularySize];
@@ -266,20 +269,34 @@ public class WNTM {
         }
 
     }
+
     public void constructWordGraph()
     {
         for (int i = 0; i < numDocuments; i++) {
 
             int docSize = corpus.get(i).size();
-            for (int j = 0; j < docSize - windowSize+1; j++) {
 
-                for (int k = j;  k<j+windowSize-1; k++) {
+            if(docSize<=windowSize){
+                for (int k = 0;  k<docSize-1; k++) {
                     int wordId = corpus.get(i).get(k);
 
-                    for (int m = k + 1;  m<j+windowSize; m++) {
+                    for (int m = k + 1;  m<docSize; m++) {
                         int nextId = corpus.get(i).get(m);
 
                         addEdge(wordId,nextId);
+                    }
+                }
+            }else {
+                for (int j = 0; j < docSize - windowSize + 1; j++) {
+
+                    for (int k = j; k < j + windowSize - 1; k++) {
+                        int wordId = corpus.get(i).get(k);
+
+                        for (int m = k + 1; m < j + windowSize; m++) {
+                            int nextId = corpus.get(i).get(m);
+
+                            addEdge(wordId, nextId);
+                        }
                     }
                 }
             }
@@ -340,22 +357,22 @@ public class WNTM {
     {
         System.out.println("Randomly initializing topic assignments ...");
 
-        topicAssignments = new ArrayList<List<Integer>>();
+        z = new int[numPseudoDocuments][];
 
         for (int i = 0; i < numPseudoDocuments; i++) {
-            List<Integer> topics = new ArrayList<Integer>();
+
             int docSize = pseudo_corpus.get(i).size();
+            z[i] = new int[docSize];
             for (int j = 0; j < docSize; j++) {
                 int topic = FuncUtils.nextDiscrete(multiPros); // Sample a topic
                 // Increase counts
                 pseudocTopicCount[i][topic] += 1;
                 topicWordCount[topic][pseudo_corpus.get(i).get(j)] += 1;
-                sumPseudocTopicCount[i] += 1;
+                //sumPseudocTopicCount[i] += 1;
                 sumTopicWordCount[topic] += 1;
 
-                topics.add(topic);
+                z[i][j] = topic;
             }
-            topicAssignments.add(topics);
         }
     }
 
@@ -371,28 +388,63 @@ public class WNTM {
 
         for (int iter = 1; iter <= numIterations; iter++) {
 
-            System.out.println("\tSampling iteration: " + (iter));
+            if(iter%50 == 0)
+                System.out.print(" " + (iter));
             // System.out.println("\t\tPerplexity: " + computePerplexity());
 
             sampleInSingleIteration();
 
-            if ((savestep > 0) && (iter % savestep == 0)
-                    && (iter < numIterations)) {
-                System.out.println("\t\tSaving the output from the " + iter
-                        + "^{th} sample");
-                expName = orgExpName + "-" + iter;
-               // write();
-            }
+
         }
         expName = orgExpName;
 
         iterTime =System.currentTimeMillis()-startTime;
-
+        System.out.println();
         System.out.println("Writing output from the last sample ...");
         write();
 
         System.out.println("Sampling completed!");
 
+    }
+
+    /**
+     * Sample a topic z_i from the full conditional distribution: p(z_i = j |
+     * z_-i, w) = (n_-i,j(w_i) + beta)/(n_-i,j(.) + W * beta) * (n_-i,j(d_i) +
+     * alpha)/(n_-i,.(d_i) + K * alpha)
+     *
+     * @param m
+     *            document
+     * @param n
+     *            word
+     */
+    private int sampleFullConditional(int m, int n) {
+
+        // remove z_i from the count variables
+        int topic = z[m][n];
+
+        int wordId = pseudo_corpus.get(m).get(n);
+
+        topicWordCount[topic][wordId]--;
+        pseudocTopicCount[m][topic]--;
+        sumTopicWordCount[topic]--;
+
+
+        //int maxK = -1;
+        // double value = 0;
+        for (int k = 0; k < numTopics; k++) {
+            multiPros[k] = (topicWordCount[k][wordId] + beta) / (sumTopicWordCount[k] + betaSum)
+                    * (pseudocTopicCount[m][k] + alpha);// / (ndsum[m] + K * alpha);
+        }
+
+        topic = FuncUtils.nextDiscrete(multiPros);
+        // topic = maxK;
+        // add newly estimated z_i to count variables
+        topicWordCount[topic][wordId]++;
+        pseudocTopicCount[m][topic]++;
+        sumTopicWordCount[topic]++;
+        // ndsum[m]++;
+
+        return topic;
     }
 
     public void sampleInSingleIteration()
@@ -401,35 +453,10 @@ public class WNTM {
             int docSize = pseudo_corpus.get(dIndex).size();
             for (int wIndex = 0; wIndex < docSize; wIndex++) {
                 // Get current word and its topic
-                int topic = topicAssignments.get(dIndex).get(wIndex);
-                int word = pseudo_corpus.get(dIndex).get(wIndex);
-
-                // Decrease counts
-                pseudocTopicCount[dIndex][topic] -= 1;
-                // docTopicSum[dIndex] -= 1;
-                topicWordCount[topic][word] -= 1;
-                sumTopicWordCount[topic] -= 1;
-
-                // Sample a topic
-                for (int tIndex = 0; tIndex < numTopics; tIndex++) {
-                    multiPros[tIndex] = (pseudocTopicCount[dIndex][tIndex] + alpha)
-                            * ((topicWordCount[tIndex][word] + beta) / (sumTopicWordCount[tIndex] + betaSum));
-                    // multiPros[tIndex] = ((docTopicCount[dIndex][tIndex] +
-                    // alpha) /
-                    // (docTopicSum[dIndex] + alphaSum))
-                    // * ((topicWordCount[tIndex][word] + beta) /
-                    // (topicWordSum[tIndex] + betaSum));
-                }
-                topic = FuncUtils.nextDiscrete(multiPros);
-
-                // Increase counts
-                pseudocTopicCount[dIndex][topic] += 1;
-                // docTopicSum[dIndex] += 1;
-                topicWordCount[topic][word] += 1;
-                sumTopicWordCount[topic] += 1;
-
+                int topic = sampleFullConditional(dIndex,wIndex);
                 // Update topic assignments
-                topicAssignments.get(dIndex).set(wIndex, topic);
+                z[dIndex][wIndex] = topic;
+
             }
         }
     }
@@ -532,7 +559,7 @@ public class WNTM {
                 for(int wIndex=0; wIndex<len; wIndex++)
                 {
                     int wordId = corpus.get(i).get(wIndex);
-                    pro += phi[j][wIndex]/len;
+                    pro += phi[j][wordId]/len;
                 }
 
                 writer.write(pro + " ");
@@ -557,8 +584,8 @@ public class WNTM {
     public static void main(String args[])
             throws Exception
     {
-        WNTM wntm = new WNTM("test/corpus.txt", 7, 0.1,
-                0.01, 100, 10, 20, "testWNTM");
+        WNTM wntm = new WNTM("dataset/Pascal_Flickr.txt", 100, 0.1,
+                0.01, 1000, 10, 10, "Pascal_FlickrWNTM");
         wntm.inference();
     }
 }
