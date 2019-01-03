@@ -17,13 +17,10 @@ import java.util.*;
  */
 public class CoherenceEval {
 
-    String pathTopTopicFile;
+    //Map<Integer, Map<Integer, Integer>> wordGraph;
+    //Map<Integer,Integer> wordDegree;
 
-    String pathWikipediaFile;
-
-    Map<Integer, Map<Integer, Integer>> wordGraph;
-    Map<Integer,Integer> wordDegree;
-
+    int [][]ww;
     public int numDocuments; // Number of documents in the corpus
 
     public HashMap<String, Integer> word2IdVocabulary; // Vocabulary to get ID
@@ -32,34 +29,62 @@ public class CoherenceEval {
     // given an ID
  //   public int vocabularySize; // The number of word types in the corpus
 
-    public int windowSize = 10;
+    public int windowSize = 100;
 
     public int windowNum = 0;
 
-    ArrayList<ArrayList<Integer>> topTopicWordList;
+    int indexWord = 0;
 
-    public CoherenceEval(String inPathWikipediaFile, String inPathTopTopicFile)
+    public CoherenceEval()
             throws Exception
     {
-        pathTopTopicFile = inPathTopTopicFile;
-        pathWikipediaFile = inPathWikipediaFile;
+
         word2IdVocabulary = new HashMap<String,Integer>();
         id2WordVocabulary = new HashMap<Integer,String>();
-        wordGraph = new HashMap<Integer, Map<Integer, Integer>>();
-        wordDegree = new HashMap<Integer,Integer>();
-        topTopicWordList = new ArrayList<ArrayList<Integer>>();
+        //wordGraph = new HashMap<Integer, Map<Integer, Integer>>();
+       // wordDegree = new HashMap<Integer,Integer>();
+       // topTopicWordList = new ArrayList<ArrayList<Integer>>();
         windowNum = 0;
-
-        readTopTopicWord();
-
-        readWikipedia();
     }
 
-    public void readTopTopicWord()
+    public void readTopTopicWordForVocabulary(String pathTopTopicFile)
     {
         BufferedReader br = null;
         try {
-            int indexWord = 0;
+
+            br = new BufferedReader(new FileReader(pathTopTopicFile));
+            for (String doc; (doc = br.readLine()) != null;) {
+
+                if (doc.trim().length() == 0)
+                    continue;
+
+                String[] words = doc.trim().split(" ");
+               // ArrayList<Integer> oneTopic = new ArrayList<Integer>();
+
+                for (String word : words) {
+                    if (!word2IdVocabulary.containsKey(word) ){
+
+                        word2IdVocabulary.put(word, indexWord);
+                        id2WordVocabulary.put(indexWord, word);
+                        indexWord++;
+                    }
+                }
+            }
+            br.close();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    public ArrayList<ArrayList<Integer>>  readTopTopicWord(String pathTopTopicFile)
+    {
+        BufferedReader br = null;
+
+        ArrayList<ArrayList<Integer>>  topTopicWordList = new ArrayList<ArrayList<Integer>>();
+        try {
+
             br = new BufferedReader(new FileReader(pathTopTopicFile));
             for (String doc; (doc = br.readLine()) != null;) {
 
@@ -70,17 +95,9 @@ public class CoherenceEval {
                 ArrayList<Integer> oneTopic = new ArrayList<Integer>();
 
                 for (String word : words) {
-                    if (word2IdVocabulary.containsKey(word)) {
-                        oneTopic.add(word2IdVocabulary.get(word));
-                    }
-                    else {
-                        oneTopic.add(indexWord);
-                        word2IdVocabulary.put(word, indexWord);
-                        id2WordVocabulary.put(indexWord, word);
-                        wordDegree.put(indexWord,0);
-                        indexWord += 1;
 
-                    }
+                    oneTopic.add(word2IdVocabulary.get(word));
+
                 }
 
                 topTopicWordList.add(oneTopic);
@@ -90,39 +107,64 @@ public class CoherenceEval {
         catch (Exception e) {
             e.printStackTrace();
         }
+        return topTopicWordList;
     }
-    public void readWikipedia()
+    public void readWikipedia(String pathWikipediaFile)
     {
         BufferedReader br = null;
         try {
             int indexWord = -1;
             br = new BufferedReader(new FileReader(pathWikipediaFile));
+            int senId = 0;
             for (String doc; (doc = br.readLine()) != null;) {
 
                 if (doc.trim().length() == 0)
                     continue;
 
+                if(senId%1000==0)
+                    System.out.print(senId + " ");
+                senId++;
                 String[] words = doc.trim().split("\\s+");
 
                 int docSize = words.length;
-                for (int j = 0; j < docSize - windowSize+1; j++) {
 
-                    for (int k = j; k<j+windowSize; k++)
-                        if (word2IdVocabulary.containsKey(words[k])) {
-                            int wordId = word2IdVocabulary.get(words[k]);
-                            wordDegree.put(wordId,wordDegree.get(wordId)+1);
+                if(docSize<=windowSize){
 
-                        }
-
-                    for (int k = j; k<j+windowSize-1; k++) {
+                    for (int k = 0; k<docSize; k++) {
                         if (!word2IdVocabulary.containsKey(words[k]))
                             continue;
+                        else{
+                            int wordId = word2IdVocabulary.get(words[k]);
+                           // wordDegree.put(wordId,wordDegree.get(wordId)+1);
+                        }
 
-                        for (int m = k + 1; m<j+windowSize; m++)
+                        for (int m = k + 1; m<docSize; m++)
                             if (word2IdVocabulary.containsKey(words[m]))
-                                addEdge(word2IdVocabulary.get(words[k]),word2IdVocabulary.get(words[m]));
+                                System.out.println();
+                                //addEdge(word2IdVocabulary.get(words[k]),word2IdVocabulary.get(words[m]));
                     }
                     windowNum++;
+                }else {
+                    for (int j = 0; j < docSize - windowSize + 1; j++) {
+
+                        //for (int k = j; k < j + windowSize; k++)
+
+
+                        for (int k = j; k < j + windowSize ; k++) {
+                            if (!word2IdVocabulary.containsKey(words[k]))
+                                continue;
+                            else{
+                                int wordId = word2IdVocabulary.get(words[k]);
+                               // wordDegree.put(wordId, wordDegree.get(wordId) + 1);
+
+                            }
+
+                            for (int m = k + 1; m < j + windowSize; m++)
+                                if (word2IdVocabulary.containsKey(words[m]))
+                                    System.out.println();// addEdge(word2IdVocabulary.get(words[k]), word2IdVocabulary.get(words[m]));
+                        }
+                        windowNum++;
+                    }
                 }
                // corpus.add(document);
             }
@@ -134,76 +176,86 @@ public class CoherenceEval {
         }
     }
 
+    public void readWikipediaWhole(String pathWikipediaFile)
+    {
+        BufferedReader br = null;
+        int senId = 0;
+        try {
+            int indexWord = -1;
+            br = new BufferedReader(new FileReader(pathWikipediaFile));
 
-    public boolean containsEdge(int p1, int p2) {
+            System.out.println("began to read file from wikepedia");
+            for (String doc; (doc = br.readLine()) != null;) {
 
-        if (!wordGraph.containsKey(p1)) {
-            return false;
-        }
-        if (!wordGraph.containsKey(p2)) {
-            return false;
-        }
-        if (!wordGraph.get(p1).containsKey(p2)) {
-            return false;
-        }
-        if (!wordGraph.get(p2).containsKey(p1)) {
-            return false;
-        }
-        return true;
-    }
+                if (doc.trim().length() == 0)
+                    continue;
 
 
-    public void addEdge(int p1, int p2) {
 
-        if(p1==p2)
-            return;
+                if(senId%10000==0)
+                    System.out.print("| ");
+                if(senId%200000==0)
+                    System.out.println();
+                senId++;
+                String[] words = doc.trim().split("\\s+");
 
-        if (this.containsEdge(p1, p2)) {
-            wordGraph.get(p1).put(p2, wordGraph.get(p1).get(p2)+1);
-            wordGraph.get(p2).put(p1, wordGraph.get(p2).get(p1)+1);
-            //wordDegree.put(p1,wordDegree.get(p1)+1);
-            //wordDegree.put(p2,wordDegree.get(p2)+1);
-            return;
-        }
-        if (!wordGraph.containsKey(p1)) {
-            wordGraph.put(p1, new HashMap<Integer, Integer>());
-            //wordDegree.put(p1,0);
-        }
-        if (!wordGraph.containsKey(p2)) {
-            wordGraph.put(p2, new HashMap<Integer, Integer>());
-            //wordDegree.put(p2,0);
-        }
-        wordGraph.get(p1).put(p2, 1);
-        wordGraph.get(p2).put(p1, 1);
-        //wordDegree.put(p1,wordDegree.get(p1)+1);
-       // wordDegree.put(p2,wordDegree.get(p2)+1);
-    }
+                int docSize = words.length;
 
-    public void show() {
-        Set<Map.Entry<Integer, Map<Integer, Integer>>> set = wordGraph.entrySet();
-        for (Map.Entry<Integer, Map<Integer, Integer>> e : set) {
-            Set<Map.Entry<Integer, Integer>> temp = e.getValue().entrySet();
-            if (temp.size() > 0) {
-                System.out.print(id2WordVocabulary.get(e.getKey()) + " -> ");
-                for (Map.Entry<Integer, Integer> e1 : temp) {
-                    System.out.print(id2WordVocabulary.get(e1.getKey()) + "(" + e1.getValue() + ") ");
+                ArrayList<Integer> arr = new ArrayList<Integer>();
+
+                for (int k = 0; k < docSize; k++) {
+
+                    int wordId = -1;
+                    if (!word2IdVocabulary.containsKey(words[k]))
+                        continue;
+                    else {
+                        wordId = word2IdVocabulary.get(words[k]);
+
+                        if (arr.contains(wordId))
+                            continue;
+                        else
+                        {
+                            arr.add(wordId);
+                            ww[wordId][wordId] += 1;
+                        }
+
+                    }
                 }
-                System.out.println();
+                if(arr.size()==0)
+                    continue;
+                for(int k=0; k<arr.size()-1; k++)
+                    for (int m = k + 1; m <arr.size(); m++){
+                            ww[arr.get(k)][arr.get(m)] += 1;
+                            ww[arr.get(m)][arr.get(k)] += 1;
+                        }
+
+
+                // corpus.add(document);
             }
+            br.close();
+            // show();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
         }
 
+        windowNum = senId;
+
+        if(windowNum==1000000)
+            System.out.println("finish!");
+        else
+            System.out.println("the number of wikipedia documents: " + windowNum);
     }
+
+
 
     public double computOneTopicPMI(ArrayList<Integer> topW)
     {
         double coh = 0;
         // double coh2 = 0;
 
-
         for(int i=0; i<topW.size(); i++)
         {
-            if(!wordGraph.containsKey(topW.get(i)))
-                continue;
 
             for(int j=i+1; j<topW.size(); j++)
             {
@@ -212,18 +264,15 @@ public class CoherenceEval {
                 int id1 = topW.get(i);
                 int id2 = topW.get(j);
 
-                int comC = 0;
-
-                if(wordGraph.get(id1).containsKey(id2))
-                    comC = wordGraph.get(id1).get(id2);
+                int comC = ww[id1][id2];
 
                 if(comC==0)
                     continue;
 
                 double comP = (double)comC;
-                double id1P = (double) wordDegree.get(id1);
+                double id1P = (double) ww[id1][id1];
                 // System.out.println(id2);
-                double id2P = (double) wordDegree.get(id2);
+                double id2P = (double) ww[id2][id2];
 
                 if(id1P==0 || id2P==0)
                     System.out.println("function \"computOneTopicCoh\" Exception");
@@ -235,7 +284,6 @@ public class CoherenceEval {
                     //coh +=  Math.log((comC+1)/id2P);
                     coh += Math.log(comP*windowNum/(id1P*id2P));
                 }
-
                 //System.out.println("Data: " + data.size() + " common:" + comC + " id1P:" + id2fre.get(id1).size() + " id2P:" + id2fre.get(id2).size() + " "+ coh + " "+ coh2);
             }
         }
@@ -244,8 +292,10 @@ public class CoherenceEval {
         return coh;
     }
 
-    public double computeCoherence()
+    public double computeCoherence(String path)
     {
+
+        ArrayList<ArrayList<Integer>> topTopicWordList = readTopTopicWord(path);
         double coh = 0;
 
         //double sis[][] = computSis(comList);
@@ -256,7 +306,7 @@ public class CoherenceEval {
         return coh/topTopicWordList.size();
     }
 
-    public static void evaluate(String patToWikipediaFileFile,
+    public  void evaluate(String patToWikipediaFileFile,
                                 String pathToTopTopicFiles, String suffix)
             throws Exception
     {
@@ -265,16 +315,29 @@ public class CoherenceEval {
         writer.write("Wikipedia file in: " + patToWikipediaFileFile + "\n\n");
         File[] files = new File(pathToTopTopicFiles).listFiles();
 
+        //List<Double> coherence = new ArrayList<Double>();
+        for (File file : files) {
+            if (!file.getName().endsWith(suffix))
+                continue;
+
+            readTopTopicWordForVocabulary(file.getAbsolutePath());
+        }
+
+        ww = new int[word2IdVocabulary.size()][word2IdVocabulary.size()];
+
+        readWikipediaWhole(patToWikipediaFileFile);
+
         List<Double> coherence = new ArrayList<Double>();
         for (File file : files) {
             if (!file.getName().endsWith(suffix))
                 continue;
             writer.write("Results for: " + file.getAbsolutePath() + "\n");
-            CoherenceEval dce = new CoherenceEval(patToWikipediaFileFile,
-                    file.getAbsolutePath());
-            double value = dce.computeCoherence();
+
+            double value = computeCoherence(file.getAbsolutePath() );
             writer.write("\tCoherence: " + value + "\n");
             coherence.add(value);
+
+            System.out.println(file+ "--coherence---"+value);
 
         }
         if (coherence.size() == 0) {
@@ -302,7 +365,8 @@ public class CoherenceEval {
     public static void main(String[] args)
             throws Exception
     {
-        CoherenceEval.evaluate("dataset/wiki.en.text1000000", "results/", "topWords");
+        CoherenceEval ce = new CoherenceEval();
+        ce.evaluate("dataset/wiki.en.text1000000", "results/", "topWords");
     }
 
 }
