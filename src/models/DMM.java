@@ -157,7 +157,7 @@ public class DMM
 				List<Integer> document = new ArrayList<Integer>();
 
 				List<Integer> wordOccurenceToIndexInDoc = new ArrayList<Integer>();
-				HashMap<String, Integer> wordOccurenceToIndexInDocCount = new HashMap<String, Integer>();
+				HashMap<Integer, Integer> wordOccurenceToIndexInDocCount = new HashMap<Integer, Integer>();
 
 				for (String word : words) {
 					if (word2IdVocabulary.containsKey(word)) {
@@ -171,11 +171,11 @@ public class DMM
 					}
 
 					int times = 0;
-					if (wordOccurenceToIndexInDocCount.containsKey(word)) {
-						times = wordOccurenceToIndexInDocCount.get(word);
+					if (wordOccurenceToIndexInDocCount.containsKey(indexWord)) {
+						times = wordOccurenceToIndexInDocCount.get(indexWord);
 					}
 					times += 1;
-					wordOccurenceToIndexInDocCount.put(word, times);
+					wordOccurenceToIndexInDocCount.put(indexWord, times);
 					wordOccurenceToIndexInDoc.add(times);
 				}
 				numDocuments++;
@@ -261,8 +261,8 @@ public class DMM
 		long startTime = System.currentTimeMillis();
 
 		for (int iter = 1; iter <= ITERATIONS; iter++) {
-
-			System.out.println("\tSampling iteration: " + (iter));
+			if(iter%50==0)
+				System.out.print(" " + (iter));
 			// System.out.println("\t\tPerplexity: " + computePerplexity());
 
 			for (int m = 0; m < numDocuments; m++)
@@ -276,6 +276,7 @@ public class DMM
 		iterTime =System.currentTimeMillis()-startTime;
 
 		expName = orgExpName;
+		System.out.println();
 
 		System.out.println("Writing output from the last sample ...");
 		write();
@@ -308,7 +309,7 @@ public class DMM
 		// Sample a topic
 		for (int tIndex = 0; tIndex < K; tIndex++) {
 			multiPros[tIndex] = (m_z[tIndex] + alpha);
-			for (int wIndex = 0; wIndex < N_d[m]; wIndex++) {
+			for (int wIndex = 0; wIndex < corpus.get(m).size(); wIndex++) {
 				int word = corpus.get(m).get(wIndex);
 				multiPros[tIndex] *= (n_w_z[tIndex][word] + beta
 						+ occurenceToIndexCount.get(m).get(wIndex) - 1)
@@ -361,20 +362,7 @@ public class DMM
 		writer.close();
 	}
 
-	public void writeIDbasedCorpus()
-		throws IOException
-	{
-		BufferedWriter writer = new BufferedWriter(new FileWriter(folderPath
-			+ expName + ".IDcorpus"));
-		for (int dIndex = 0; dIndex < numDocuments; dIndex++) {
-			int docSize = corpus.get(dIndex).size();
-			for (int wIndex = 0; wIndex < docSize; wIndex++) {
-				writer.write(corpus.get(dIndex).get(wIndex) + " ");
-			}
-			writer.write("\n");
-		}
-		writer.close();
-	}
+
 
 	public void writeTopicAssignments()
 		throws IOException
@@ -481,8 +469,8 @@ public class DMM
 	public static void main(String args[])
 		throws Exception
 	{
-		DMM dmm = new DMM("test/corpus.txt", 7, 0.1,
-			0.1, 50, 20, "testDMM");
+		DMM dmm = new DMM("dataset/GoogleNews.txt", 200, 0.1,
+			0.1, 50, 10, "GoogleNewsDMM");
 		dmm.inference();
 	}
 }
