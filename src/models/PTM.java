@@ -19,6 +19,7 @@ public class PTM {
 
     public double alpha; // Hyper-parameter alpha
     public double beta; // Hyper-parameter beta
+    public double gama;
 
     public int numTopics; // Number of topics
     public int numIterations; // Number of Gibbs sampling iterations
@@ -26,6 +27,7 @@ public class PTM {
 
     public double alphaSum; // alpha * numTopics
     public double betaSum; // beta * vocabularySize
+    public double gamaSum; //gama * numLongDoc
 
     ArrayList<int[]> Corpus = new ArrayList<>(); // Word ID-based corpus
 
@@ -38,20 +40,25 @@ public class PTM {
     // given an ID
     public int vocabularySize; // The number of word types in the corpus
 
-
+    // Example: given a document of "a a b a b c d c". We have: 1 2 1 3 2 1 1 2
+    //public List<List<Integer>> occurenceToIndexCount;
 
     public int numLongDoc;
 
     //public ArrayList<ArrayList<int[]>> assignmentList  = new ArrayList<ArrayList<int[]>>();// [topic][pseudo-doc]
     private int[][] U; // [topic][pseudo-doc];
-    private int[] longDocShortCnts; // U_{.j};  the number of short texts belonging to each long document
-    private int[] longDocLength; //the number of words in each long document;
-    private int[] docToLong; // pre-long document for each short text
-    ArrayList<int[]> wordToTopic = new ArrayList<>(); // topic for each word
+    private int[] m_z; // U_{.j};  the number of short texts belonging to each long document
+    private int[] n_z; //the number of words in each long document;
+    private int[] z; // pre-long document for each short text
+    private int[][] z_w ; // topic for each word
     private int[][] V; // [word][topic];
     private int[] topicCnts; // V_{.k}
-    private int[][] longDocWordCnts; // [pseudo-doc][word]
+    //private int[][] n_w_z; // [pseudo-doc][word]
     private int[][] shortDocTopicCnts; //[short][topic]
+    /**
+     * number of words in document d.
+     */
+    int N_d[];
     //private int tokenSize;
 
     // Double array used to sample a topic
@@ -74,50 +81,51 @@ public class PTM {
 
 
     public PTM(String pathToCorpus, int inNumTopics, int num_longDoc,
-                double inAlpha, double inBeta, int inNumIterations, int inTopWords)
+                double inAlpha, double inBeta, double inGama, int inNumIterations, int inTopWords)
             throws Exception
     {
-        this(pathToCorpus, inNumTopics, num_longDoc, inAlpha, inBeta, inNumIterations,
+        this(pathToCorpus, inNumTopics, num_longDoc, inAlpha, inBeta, inGama, inNumIterations,
                 inTopWords, "PTMmodel");
     }
 
     public PTM(String pathToCorpus, int inNumTopics, int num_longDoc,
-                double inAlpha, double inBeta, int inNumIterations, int inTopWords,
+                double inAlpha, double inBeta, double inGama, int inNumIterations, int inTopWords,
                 String inExpName)
             throws Exception
     {
-        this(pathToCorpus, inNumTopics, num_longDoc, inAlpha, inBeta, inNumIterations,
+        this(pathToCorpus, inNumTopics, num_longDoc, inAlpha, inBeta, inGama, inNumIterations,
                 inTopWords, inExpName, "", 0);
 
     }
 
     public PTM(String pathToCorpus, int inNumTopics, int num_longDoc,
-                double inAlpha, double inBeta, int inNumIterations, int inTopWords,
+                double inAlpha, double inBeta, double inGama, int inNumIterations, int inTopWords,
                 String inExpName, String pathToTAfile)
             throws Exception
     {
-        this(pathToCorpus, inNumTopics, num_longDoc, inAlpha, inBeta, inNumIterations,
+        this(pathToCorpus, inNumTopics, num_longDoc, inAlpha, inBeta, inGama, inNumIterations,
                 inTopWords, inExpName, pathToTAfile, 0);
 
     }
 
     public PTM(String pathToCorpus, int inNumTopics, int num_longDoc,
-                double inAlpha, double inBeta,  int inNumIterations, int inTopWords,
+                double inAlpha, double inBeta, double inGama,  int inNumIterations, int inTopWords,
                 String inExpName, int inSaveStep)
             throws Exception
     {
-        this(pathToCorpus, inNumTopics, num_longDoc,  inAlpha, inBeta,  inNumIterations,
+        this(pathToCorpus, inNumTopics, num_longDoc,  inAlpha, inBeta, inGama,  inNumIterations,
                 inTopWords, inExpName, "", inSaveStep);
 
     }
 
     public PTM(String pathToCorpus, int inNumTopics, int num_longDoc,
-                double inAlpha, double inBeta,  int inNumIterations, int inTopWords,
+                double inAlpha, double inBeta, double inGama,  int inNumIterations, int inTopWords,
                 String inExpName, String pathToTAfile, int inSaveStep)
             throws IOException
     {
         alpha = inAlpha;
         beta = inBeta;
+        gama = inGama;
 
         numTopics = inNumTopics;
         numIterations = inNumIterations;
@@ -143,6 +151,8 @@ public class PTM {
         numShorDoc = 0;
         numWordsInCorpus = 0;
 
+       // occurenceToIndexCount = new ArrayList<List<Integer>>();
+
         BufferedReader br = null;
         try {
             int indexWord = -1;
@@ -157,10 +167,13 @@ public class PTM {
                 int [] document = new int[words.length];
 
                 int ind = 0;
+
+                //List<Integer> wordOccurenceToIndexInDoc = new ArrayList<Integer>();
+                //HashMap<Integer, Integer> wordOccurenceToIndexInDocCount = new HashMap<Integer, Integer>();
+
                 for (String word : words) {
                     if (word2IdVocabulary.containsKey(word)) {
                         document[ind++] = word2IdVocabulary.get(word);
-
                     }
                     else {
                         indexWord += 1;
@@ -169,11 +182,21 @@ public class PTM {
 
                         document[ind++] = indexWord;
                     }
+
+                   // int times = 0;
+                   // if (wordOccurenceToIndexInDocCount.containsKey(indexWord)) {
+                    //    times = wordOccurenceToIndexInDocCount.get(indexWord);
+                    //}
+                    //times += 1;
+                    //wordOccurenceToIndexInDocCount.put(indexWord, times);
+                    //wordOccurenceToIndexInDoc.add(times);
                 }
 
                 numShorDoc++;
                 numWordsInCorpus += document.length;
                 Corpus.add(document);
+
+               // occurenceToIndexCount.add(wordOccurenceToIndexInDoc);
             }
         }
         catch (Exception e) {
@@ -181,7 +204,8 @@ public class PTM {
         }
 
         vocabularySize = word2IdVocabulary.size(); // vocabularySize = indexWord
-        docToLong = new int[numShorDoc];
+        z = new int[numShorDoc];
+        z_w = new int[numShorDoc][];
 
         multiTopicPros = new double[numTopics];
         for (int i = 0; i < numTopics; i++) {
@@ -195,15 +219,17 @@ public class PTM {
 
         alphaSum = numTopics * alpha;
         betaSum = vocabularySize * beta;
+        gamaSum = gama * vocabularySize;
 
         // init the counter
         U = new int[numTopics][numLongDoc];
-        longDocShortCnts = new int[numLongDoc]; // U_{.j};
-        longDocLength = new int[numLongDoc];
+        m_z = new int[numLongDoc]; // U_{.j};
+        n_z = new int[numLongDoc];
         V = new int[vocabularySize][numTopics]; // [word][topic];
         topicCnts = new int[numTopics]; // V_{.k}
-        longDocWordCnts = new int[numLongDoc][vocabularySize];
+        //n_w_z = new int[numLongDoc][vocabularySize];
         shortDocTopicCnts = new int[numShorDoc][numTopics];
+        N_d = new int[numShorDoc];
         System.out.println("Corpus size: " + numShorDoc + " docs, "
                 + numWordsInCorpus + " words");
         System.out.println("Vocabuary size: " + vocabularySize);
@@ -213,11 +239,7 @@ public class PTM {
         System.out.println("Number of sampling iterations: " + numIterations);
         System.out.println("Number of top topical words: " + topWords);
 
-        tAssignsFilePath = pathToTAfile;
-        if (tAssignsFilePath.length() > 0)
-            initialize();
-        else
-            initialize();
+        initialize();
     }
 
     /**
@@ -235,123 +257,161 @@ public class PTM {
 
             // int[] termIDArray = docToWordIDList.get(d);
             int longDoc = FuncUtils.nextDiscrete(multiLongPros);
-            docToLong[d] = longDoc;
-            longDocShortCnts[longDoc]++;
-            longDocLength[longDoc] += termIDArray.length;
+            z[d] = longDoc;
+            m_z[longDoc]++;
+            n_z[longDoc] += termIDArray.length;
             //ArrayList<int[]> d_assignment_list = new ArrayList<int[]>();
-            int []prewordToTopic = new int[termIDArray.length];
+            z_w[d] = new int[termIDArray.length];
+            N_d[d] = termIDArray.length;
+
             for (int t = 0; t < termIDArray.length; t++) {
                 int termID = termIDArray[t];
-
                 int topic = FuncUtils.nextDiscrete(multiTopicPros); // Sample a topic
-
-                //int[] assignment = new int[2];
-                //assignment[0] = topic;
-                //assignment[1] = longDoc;
-
-                U[topic][longDoc]++;
-                V[termID][topic]++;
-                longDocWordCnts[longDoc][termID]++;
+                //n_w_z[longDoc][termID]++;
                 shortDocTopicCnts[d][topic]++;
                 topicCnts[topic]++;
                 //tokenSize++;
-                prewordToTopic[t] = topic;
+                z_w[d][t] = topic;
+                U[topic][longDoc]++;
+                V[termID][topic]++;
 
-                //d_assignment_list.add(assignment);
+
             }
-            wordToTopic.add(prewordToTopic);
+           // wordToTopic.add(prewordToTopic);
             //assignmentList.add(d_assignment_list);
         }
 
         initTime =System.currentTimeMillis()-startTime;
 
         System.out.println("finish init_PTM!");
-
     }
 
+
+    /**
+     * Sample a topic z_i from the full conditional distribution: p(z_i = j |
+     * z_-i, w) = (n_-i,j(w_i) + beta)/(n_-i,j(.) + W * beta) * (n_-i,j(d_i) +
+     * alpha)/(n_-i,.(d_i) + K * alpha)
+     *
+     * @param m
+     *            document
+     */
+    private int sampleFullConditionalForLong(int m) {
+        // remove z_i from the count variables
+        //System.out.println("m: " + m);
+        int pre_long = z[m];
+        m_z[pre_long]--;
+        n_z[pre_long] -= N_d[m];
+
+        for(int n=0; n<Corpus.get(m).length; n++) {
+            int topic = z_w[m][n];
+            U[topic][pre_long]--;
+        }
+        // Sample a topic
+        for (int tIndex = 0; tIndex < numLongDoc; tIndex++) {
+            multiLongPros[tIndex] = m_z[tIndex];
+
+            for(int k=0; k<numTopics; k++){
+                if(shortDocTopicCnts[m][k]==0)
+                    continue;
+
+                for(int i=1; i<=shortDocTopicCnts[m][k]; i++)
+                {
+                    multiLongPros[tIndex] *= (U[k][tIndex] + alpha + i - 1);
+                }
+            }
+            double prob = 1;
+            for(int wIndex=0; wIndex<N_d[m]; wIndex++)
+               prob  *= (n_z[tIndex]+alphaSum+wIndex);
+
+            multiLongPros[tIndex] /= prob;
+        }
+
+        pre_long = FuncUtils.nextDiscrete(multiLongPros);
+        // System.out.println("topic: " + topic);
+        m_z[pre_long]++;
+        n_z[pre_long] += N_d[m];
+
+        for(int n=0; n<Corpus.get(m).length; n++) {
+            int topic = z_w[m][n];
+            U[topic][pre_long]++;
+        }
+
+        //for(int n=0; n<Corpus.get(m).length; n++)
+         //   n_w_z[topic][Corpus.get(m)[n]]++;
+        return pre_long;
+    }
+
+    /**
+     * Sample a topic z_i from the full conditional distribution: p(z_i = j |
+     * z_-i, w) = (n_-i,j(w_i) + beta)/(n_-i,j(.) + W * beta) * (n_-i,j(d_i) +
+     * alpha)/(n_-i,.(d_i) + K * alpha)
+     *
+     * @param m
+     *            document
+     * @param n
+     *            word
+     */
+    private int sampleFullConditionalForWordTopic(int preLong, int m, int n) {
+
+        // remove z_i from the count variables
+        int topic = z_w[m][n];
+
+        int wordId = Corpus.get(m)[n];
+        V[wordId][topic]--;
+        U[topic][preLong]--;
+        topicCnts[topic]--;
+
+        shortDocTopicCnts[m][topic]--;
+
+        //ndsum[m]--;
+        //int maxK = -1;
+        // double value = 0;
+        for (int k = 0; k < numTopics; k++) {
+            multiTopicPros[k] = (V[wordId][k] + beta) / (topicCnts[k] + betaSum) * (U[k][preLong] + alpha);// / (ndsum[m] + K * alpha);
+        }
+
+        topic = FuncUtils.nextDiscrete(multiTopicPros);
+
+        V[wordId][topic]++;
+        U[topic][preLong]++;
+        topicCnts[topic]++;
+        shortDocTopicCnts[m][topic]++;
+
+        return topic;
+    }
 
     public void inference()
             throws IOException
     {
-
-
         writeDictionary();
 
         System.out.println("Running Gibbs sampling inference: ");
-
         long startTime = System.currentTimeMillis();
 
         for (int iter = 0; iter < this.numIterations; iter++) {
 
-
+            if(iter%50==0)
+                System.out.print(" " + (iter));
 
             for (int s = 0; s < Corpus.size(); s++) {
 
-                int[] termIDArray = Corpus.get(s);
-                int[] prewordToTopic = wordToTopic.get(s);
-                int preLong = docToLong[s];
+                int preLong = sampleFullConditionalForLong(s);
 
-                longDocShortCnts[preLong]--;
-                longDocLength[preLong] -= termIDArray.length;
-                for (int t = 0; t < termIDArray.length; t++) {
+                z[s] = preLong;
 
-                    int termID = termIDArray[t];
-                    int preTopic = prewordToTopic[t];
-                    // update the counter
-                    U[preTopic][preLong]--;
-                    V[termID][preTopic]--;
-                    longDocWordCnts[preLong][termID]--;
-                    topicCnts[preTopic]--;
+                for (int wIndex = 0; wIndex < Corpus.get(s).length; wIndex++) {
+                    int topic = sampleFullConditionalForWordTopic(preLong, s, wIndex);
+                    z_w[s][wIndex] = topic;
                 }
 
-                // Sample a prelong for each short text
-                for (int lIndex = 0; lIndex < numLongDoc; lIndex++) {
-                    multiLongPros[lIndex] = longDocShortCnts[lIndex];
-
-
-
-                    for (int wIndex = 0; wIndex < termIDArray.length; wIndex++) {
-
-                        int topic = prewordToTopic[wIndex];
-                        multiLongPros[lIndex] *= (U[topic][lIndex] + alpha
-                                + shortDocTopicCnts[s][topic] - 1)
-                        /(longDocLength[lIndex] + alphaSum + wIndex-1);
-
-                    }
-                }
-                preLong = FuncUtils.nextDiscrete(multiLongPros);
-
-                longDocShortCnts[preLong]++;
-                longDocLength[preLong] += termIDArray.length;
-
-                for (int wIndex = 0; wIndex < termIDArray.length; wIndex++) {
-
-                    int topic = prewordToTopic[wIndex];
-                    shortDocTopicCnts[s][topic]--;
-                    for (int tIndex = 0; tIndex < numTopics; tIndex++) {
-                        multiTopicPros[tIndex] = (shortDocTopicCnts[s][tIndex] + alpha);
-
-
-                        multiTopicPros[tIndex] *= (V[wIndex][tIndex] + beta)
-                                / (topicCnts[tIndex] + betaSum);
-
-                    }
-                    topic = FuncUtils.nextDiscrete(multiTopicPros);
-                    shortDocTopicCnts[s][topic]++;
-                    U[topic][preLong]++;
-                    V[wIndex][topic]++;
-                    longDocWordCnts[preLong][wIndex]++;
-                    topicCnts[topic]++;
-                }
             }
-
-            //System.out.println("finished iter :" + iter + "\tcost time:" + ((double) System.currentTimeMillis() - startTime) / 1000);
 
         }
 
         iterTime =System.currentTimeMillis()-startTime;
 
         expName = orgExpName;
+        System.out.println();
 
         System.out.println("Writing output from the last sample ...");
         write();
@@ -376,18 +436,16 @@ public class PTM {
         BufferedWriter writer = new BufferedWriter(new FileWriter(folderPath
                 + expName + ".theta"));
 
-        for (int s = 0; s < Corpus.size(); s++) {
-
-            int[] termIDArray = Corpus.get(s);
-
-            for (int t = 0; t < numTopics; t++) {
-                double pro = (shortDocTopicCnts[s][t] + alpha)
-                        / (termIDArray.length + alphaSum);
-                writer.write(pro + " ");
+        for (int i = 0; i < numShorDoc; i++) {
+            //int docSize = Corpus.get(i).length;
+            //double sum = 0.0;
+            for (int tIndex = 0; tIndex < numTopics; tIndex++) {
+                double pros = (shortDocTopicCnts[i][tIndex] + alpha)/(N_d[i]+numTopics*alpha);
+                writer.write(pros + " ");
             }
             writer.write("\n");
-
         }
+        writer.close();
         writer.close();
     }
 
@@ -479,12 +537,11 @@ public class PTM {
         writer.close();
     }
 
-
     public static void main(String args[])
             throws Exception
     {
-        PTM ptm = new PTM("test/corpus.txt", 7, 500, 0.001,
-                0.1, 100, 20, "testPTM");
+        PTM ptm = new PTM("dataset/Tweet.txt", 100, 1000, 0.1,
+                0.1, 0.01, 2000, 10, "TweetPTM");
         ptm.inference();
     }
 
