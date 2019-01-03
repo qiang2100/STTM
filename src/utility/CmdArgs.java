@@ -15,7 +15,7 @@ public class CmdArgs
 	public String vectors = "dataset/glove.6B.200d.txt";
 
 	@Option(name = "-nlongdoc", usage = "Specify number of pseudo-long documents")
-	public int nLongDoc = 1000;
+	public int nLongDoc = 300;
 
 	@Option(name = "-threshold", usage = "Specify threshold, unimportant correspondences between short texts and pseudo-documents are filtered")
 	public double threshold = 0.001;
@@ -38,11 +38,14 @@ public class CmdArgs
 	@Option(name = "-beta", usage = "Specify beta")
 	public double beta = 0.01;
 
+	@Option(name = "-gamma", usage = "Specify beta")
+	public double gamma = 0.01;
+
 	@Option(name = "-lambda", usage = "Specify mixture weight lambda")
 	public double lambda = 0.6;
 
 	@Option(name = "-niters", usage = "Specify number of iterations")
-	public int niters = 2000;
+	public int niters = 1000;
 
 	@Option(name = "-twords", usage = "Specify number of top topical words")
 	public int twords = 20;
