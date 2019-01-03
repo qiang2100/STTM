@@ -764,7 +764,7 @@ public class GPU_PDMM {
         for (int iter = 1; iter <= numIterations; iter++) {
 
             if(iter%50==0)
-                System.out.println("\tSampling iteration: " + (iter));
+                System.out.print(" " + (iter));
 
 
 
@@ -912,6 +912,7 @@ public class GPU_PDMM {
         long _e = getCurrTime();
         iterTime = (_e - _s) ;
 
+        System.out.println();
         System.out.println("Writing output from the last sample ...");
         write();
 
@@ -1136,8 +1137,8 @@ public class GPU_PDMM {
     public static void main(String args[])
             throws Exception
     {
-        GPU_PDMM gpupdmm = new GPU_PDMM("dataset/corpus.txt","dataset/glove.6B.200d.txt", 0.7, 0.1, 20, 60, 0.1,
-                0.1, 1.5, 30, 10, 3, 10, "testGPU_PDMM");
+        GPU_PDMM gpupdmm = new GPU_PDMM("dataset/Tweet.txt","dataset/glove.6B.200d.txt", 0.7, 0.1, 20, 100, 0.1,
+                0.1, 1.5, 500, 10, 3, 10, "TweetGPU_PDMM");
 
         gpupdmm.inference();
     }
