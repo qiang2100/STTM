@@ -68,13 +68,13 @@ public class STTM
 				ptm.inference();
 			}
 			else if (cmdArgs.model.equals("GPUDMM")) {
-				GPUDMM gpudmm = new GPUDMM(cmdArgs.corpus, cmdArgs.vectors,cmdArgs.GPUthreshold,cmdArgs.weight,cmdArgs.filterSize,
+				GPUDMM gpudmm = new GPUDMM(cmdArgs.corpus, cmdArgs.vectors,cmdArgs.weight,cmdArgs.GPUthreshold,cmdArgs.filterSize,
 						cmdArgs.ntopics, cmdArgs.alpha, cmdArgs.beta,
 						cmdArgs.niters, cmdArgs.twords, cmdArgs.expModelName,
 						cmdArgs.initTopicAssgns, cmdArgs.savestep);
 				gpudmm.inference();
 			}else if (cmdArgs.model.equals("GPU_PDMM")) {
-				GPU_PDMM gpupdmm = new GPU_PDMM(cmdArgs.corpus, cmdArgs.vectors,cmdArgs.GPUthreshold,cmdArgs.weight,cmdArgs.filterSize,
+				GPU_PDMM gpupdmm = new GPU_PDMM(cmdArgs.corpus, cmdArgs.vectors,cmdArgs.weight,cmdArgs.GPUthreshold,cmdArgs.filterSize,
 						cmdArgs.ntopics, cmdArgs.alpha, cmdArgs.beta, cmdArgs.lambda,
 						cmdArgs.niters, cmdArgs.twords, cmdArgs.maxTd, cmdArgs.searchTopK, cmdArgs.expModelName,
 						cmdArgs.initTopicAssgns, cmdArgs.savestep);
