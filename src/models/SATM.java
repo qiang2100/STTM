@@ -52,9 +52,6 @@ public class SATM {
     private int[][] longDocWordCnts; // [pseudo-doc][word]
     private int tokenSize;
 
-    // Double array used to sample a topic
-    public double[] multiPros;
-
     // Path to the directory containing the corpus
     public String folderPath;
     // Path to the topic modeling corpus
@@ -186,10 +183,7 @@ public class SATM {
 
         //sumTopicWordCount = new int[numTopics];
 
-        multiPros = new double[numTopics];
-        for (int i = 0; i < numTopics; i++) {
-            multiPros[i] = 1.0 / numTopics;
-        }
+
 
         alphaSum = numTopics * alpha;
         betaSum = vocabularySize * beta;
@@ -214,10 +208,7 @@ public class SATM {
 
         long startTime = System.currentTimeMillis();
 
-        if (tAssignsFilePath.length() > 0)
-            initialize();
-        else
-            initialize();
+        initialize();
 
         initTime =System.currentTimeMillis()-startTime;
     }
@@ -238,7 +229,7 @@ public class SATM {
             for (int t = 0; t < termIDArray.length; t++) {
                 int termID = termIDArray[t];
 
-                int topic = FuncUtils.nextDiscrete(multiPros); // Sample a topic
+                int topic = rg.nextInt(numTopics); // Sample a topic
                 int longDoc = rg.nextInt(numLongDoc);
                 int[] assignment = new int[2];
                 assignment[0] = topic;
@@ -264,10 +255,17 @@ public class SATM {
         for (int s = 0; s < numShorDoc; s++) {
             int[] termIDArray = Corpus.get(s);
             for (int l = 0; l < numLongDoc; l++) {
+
+                if(longDocCnts[l] ==0)
+                {
+                    psd[s][l] = ZERO_SMOOTH;
+                    continue;
+                }
                 double pd = 1.0 * longDocCnts[l] / tokenSize;
                 double _score = pd;
-                for (int termID : termIDArray) {
-                    double pdw = 1.0 * longDocWordCnts[l][termID]
+                for (int t = 0; t < termIDArray.length; t++) {
+
+                    double pdw = 1.0 * longDocWordCnts[l][termIDArray[t]]
                             / longDocCnts[l];
                     if (Double.compare(pdw, 0.0) == 0) {
                         pdw = ZERO_SMOOTH;
@@ -308,16 +306,16 @@ public class SATM {
     public void inference()
             throws IOException
     {
-
-
         writeDictionary();
 
         System.out.println("Running Gibbs sampling inference: ");
 
         long startTime = System.currentTimeMillis();
 
-        for (int iter = 0; iter < this.numIterations; iter++) {
+        for (int iter = 1; iter < this.numIterations; iter++) {
 
+            if(iter%50==0)
+                System.out.print(" " + (iter));
 
             computePds();
 
@@ -331,7 +329,10 @@ public class SATM {
                 ArrayList<int[]> s_assignment = assignmentList.get(s);
 
                 for (int d = 0; d < psd[s].length; d++) {
+                    if(Double.isNaN(psd[s][d]))
+                        continue;
                     if (Double.compare(psd[s][d], threshold) > 0) {
+                       // System.out.println(d + " " + psd[s][d]);
                         validLongDocIDList.add(d);
                     }
                 }
@@ -364,10 +365,8 @@ public class SATM {
                         for (int z = 0; z < numTopics; z++) {
                             pdz = 1.0
                                     * (U[z][longDocID] + alpha)
-                                    / (longDocCnts[longDocID] + numTopics
-                                    * alpha);
-                            pzw = 1.0 * (V[termID][z] + beta)
-                                    / (topicCnts[z] + vocabularySize * beta);
+                                    / (longDocCnts[longDocID] + alphaSum);
+                            pzw = 1.0 * (V[termID][z] + beta) / (topicCnts[z] +  betaSum);
                             pdzMat[d][z] = psd[s][longDocID] * pdz * pzw;
                             distSum += pdzMat[d][z];
                         }
@@ -397,7 +396,7 @@ public class SATM {
         iterTime =System.currentTimeMillis()-startTime;
 
         expName = orgExpName;
-
+        System.out.println();
         System.out.println("Writing output from the last sample ...");
         write();
 
@@ -422,20 +421,22 @@ public class SATM {
         BufferedWriter writer = new BufferedWriter(new FileWriter(folderPath
                 + expName + ".theta"));
 
-        for (int d = 0; d < assignmentList.size(); d++) {
+        for (int d = 0; d < numShorDoc; d++) {
 
-            ArrayList<int[]> docArr = assignmentList.get(d);
+            double multiTopic[] = new double[numTopics];
+            for (int k = 0; k < numTopics; k++) {
 
-            int shortDocTopic[] = new int[numTopics];
-
-            for (int t=0; t< docArr.size(); t++)
-                shortDocTopic[docArr.get(t)[0]]++;
-
-            for (int j = 0; j < numTopics; j++) {
-                double pro = (shortDocTopic[j] + alpha)
-                        / (docArr.size() + alphaSum);
-                writer.write(pro + " ");
+                multiTopic[k] = 1;
+                for (int wIndex = 0; wIndex < Corpus.get(d).length; wIndex++) {
+                    int word = Corpus.get(d)[wIndex];
+                    multiTopic[k] *= (V[word][k] + beta)
+                            / (topicCnts[k] + betaSum);
+                }
             }
+            multiTopic = FuncUtils.L1NormWithReusable(multiTopic);
+
+            for(int k=0; k<numTopics; k++)
+                writer.write(multiTopic[k] + " ");
             writer.write("\n");
 
         }
@@ -485,7 +486,7 @@ public class SATM {
 
         for (int i = 0; i < numTopics; i++) {
             for (int j = 0; j < vocabularySize; j++) {
-                double pro = (V[j][i] + beta) / (topicCnts[i] + vocabularySize * beta);
+                double pro = (V[j][i] + beta) / (topicCnts[i] + betaSum);
                 writer.write(pro + " ");
             }
             writer.write("\n");
@@ -534,8 +535,8 @@ public class SATM {
     public static void main(String args[])
             throws Exception
     {
-        SATM satm = new SATM("test/corpus.txt", 7, 500, 0.001, 0.1,
-                0.1, 1000, 20, "testSATM");
+        SATM satm = new SATM("dataset/GoogleNews.txt", 152, 1000, 0.001, 0.1,
+                0.1, 1000, 10, "GoogleNewsSATM");
         satm.inference();
     }
 }
