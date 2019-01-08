@@ -4,6 +4,7 @@ import utility.FuncUtils;
 
 import java.io.*;
 import java.util.*;
+import java.text.DecimalFormat;
 
 /**
  * * WNTM: A Java package for the short text topic models
@@ -31,8 +32,10 @@ public class WNTM
 
     public List<List<Integer>> corpus; // Word ID-based corpus
 
-    Map<Integer, Map<Integer, Double>> wordGraph = new HashMap<Integer, Map<Integer, Double>>();
-    Map<Integer,Integer> wordDegree = new HashMap<Integer,Integer>();
+    //Map<Integer, Map<Integer, Double>> wordGraph = new HashMap<Integer, Map<Integer, Double>>();
+    //Map<Integer,Integer> wordDegree = new HashMap<Integer,Integer>();
+
+    int wordNeighbor[][];
     public List<List<Integer>> pseudo_corpus; // Word ID-based corpus
     public int z[][]; // Topics assignments for words
     // in the corpus
@@ -74,6 +77,8 @@ public class WNTM
 
     public double initTime = 0;
     public double iterTime = 0;
+
+    DecimalFormat df = new DecimalFormat("#.000");
 
     public WNTM(String pathToCorpus, int inNumTopics,
                double inAlpha, double inBeta, int inNumIterations, int inTopWords, int inWindowSize)
@@ -175,11 +180,13 @@ public class WNTM
 
         vocabularySize = word2IdVocabulary.size(); // vocabularySize = indexWord
 
+        wordNeighbor = new int[vocabularySize][vocabularySize];
+
         long startTime = System.currentTimeMillis();
 
         constructWordGraph();
         constructPseudoCorpus();
-        numPseudoDocuments = pseudo_corpus.size();
+        numPseudoDocuments = vocabularySize;
         pseudocTopicCount = new int[numPseudoDocuments][numTopics];
         topicWordCount = new int[numTopics][vocabularySize];
         //sumPseudocTopicCount= new int[numPseudoDocuments];
@@ -215,61 +222,6 @@ public class WNTM
         System.out.println("Number of top topical words: " + topWords);
     }
 
-    public boolean containsEdge(int p1, int p2) {
-        if (!wordGraph.containsKey(p1)) {
-            return false;
-        }
-        if (!wordGraph.containsKey(p2)) {
-            return false;
-        }
-        if (!wordGraph.get(p1).containsKey(p2)) {
-            return false;
-        }
-        if (!wordGraph.get(p2).containsKey(p1)) {
-            return false;
-        }
-        return true;
-    }
-
-
-    public void addEdge(int p1, int p2) {
-        if (this.containsEdge(p1, p2)) {
-            wordGraph.get(p1).put(p2, wordGraph.get(p1).get(p2)+1);
-            wordGraph.get(p2).put(p1, wordGraph.get(p2).get(p1)+1);
-            wordDegree.put(p1,wordDegree.get(p1)+1);
-            wordDegree.put(p2,wordDegree.get(p2)+1);
-            return;
-        }
-        if (!wordGraph.containsKey(p1)) {
-            wordGraph.put(p1, new HashMap<Integer, Double>());
-            wordDegree.put(p1,0);
-        }
-        if (!wordGraph.containsKey(p2)) {
-            wordGraph.put(p2, new HashMap<Integer, Double>());
-            wordDegree.put(p2,0);
-        }
-        wordGraph.get(p1).put(p2, 1.0);
-        wordGraph.get(p2).put(p1, 1.0);
-        wordDegree.put(p1,wordDegree.get(p1)+1);
-        wordDegree.put(p2,wordDegree.get(p2)+1);
-    }
-
-
-    public void show() {
-        Set<Map.Entry<Integer, Map<Integer, Double>>> set = wordGraph.entrySet();
-        for (Map.Entry<Integer, Map<Integer, Double>> e : set) {
-            Set<Map.Entry<Integer, Double>> temp = e.getValue().entrySet();
-            if (temp.size() > 0) {
-                System.out.print(id2WordVocabulary.get(e.getKey()) + " -> ");
-                for (Map.Entry<Integer, Double> e1 : temp) {
-                    System.out.print(id2WordVocabulary.get(e1.getKey()) + "(" + e1.getValue() + ") ");
-                }
-                System.out.println();
-            }
-        }
-
-    }
-
     public void constructWordGraph()
     {
         for (int i = 0; i < numDocuments; i++) {
@@ -283,7 +235,12 @@ public class WNTM
                     for (int m = k + 1;  m<docSize; m++) {
                         int nextId = corpus.get(i).get(m);
 
-                        addEdge(wordId,nextId);
+                        //addEdge(wordId,nextId);
+
+                        if(wordId!=nextId) {
+                            wordNeighbor[wordId][nextId] += 1;
+                            wordNeighbor[nextId][wordId] += 1;
+                        }
                     }
                 }
             }else {
@@ -295,7 +252,11 @@ public class WNTM
                         for (int m = k + 1; m < j + windowSize; m++) {
                             int nextId = corpus.get(i).get(m);
 
-                            addEdge(wordId, nextId);
+                            //addEdge(wordId, nextId);
+                            if(wordId!=nextId) {
+                                wordNeighbor[wordId][nextId] += 1;
+                                wordNeighbor[nextId][wordId] += 1;
+                            }
                         }
                     }
                 }
@@ -306,44 +267,20 @@ public class WNTM
 
     public void constructPseudoCorpus()
     {
-        Iterator<Map.Entry<Integer, Integer>> it = wordDegree.entrySet().iterator();
 
-        while(it.hasNext()){
-
-            Map.Entry<Integer, Integer> entry = it.next();
-
-            System.out.println("key= "+entry.getKey()+" and value= "+entry.getValue());
-
-        }
-
-        Set<Map.Entry<Integer, Map<Integer, Double>>> set = wordGraph.entrySet();
-        for (Map.Entry<Integer, Map<Integer, Double>> e : set) {
-            Set<Map.Entry<Integer, Double>> temp = e.getValue().entrySet();
-
+        for(int i=0; i<vocabularySize; i++)
+        {
             ArrayList<Integer> onePseudo = new ArrayList<Integer>();
-            if (temp.size() > 0) {
-               // System.out.print(id2WordVocabulary.get(e.getKey()) + " -> ");
-                int degree1 = wordDegree.get(e.getKey());
-                double activity = (double)degree1/temp.size();
-                for (Map.Entry<Integer, Double> e1 : temp) {
-                    int degree2 = wordDegree.get(e1.getKey());
 
-                    double activity2 = (double)degree2/wordGraph.get(e1.getKey()).size();
+            for(int j=0; j<vocabularySize && j!=i; j++)
+            {
+                if(wordNeighbor[i][j]==0)
+                    continue;
 
-                    if(activity>activity2)
-                        activity = activity2;
-
-                    int reweight = (int)Math.ceil(wordGraph.get(e.getKey()).get(e1.getKey())/activity);
-
-                    for(int i=0; i<reweight; i++)
-                        onePseudo.add(e1.getKey());
-                    wordGraph.get(e.getKey()).put(e1.getKey(), (double)reweight);
-
-                    //System.out.print(id2WordVocabulary.get(e1.getKey()) + "(" + e1.getValue() + ") ");
-                }
-                pseudo_corpus.add(onePseudo);
-                //System.out.println();
+                for(int n=0; n<wordNeighbor[i][j]; n++)
+                    onePseudo.add(j);
             }
+            pseudo_corpus.add(onePseudo);
         }
 
         //show();
@@ -504,19 +441,16 @@ public class WNTM
         for (int tIndex = 0; tIndex < numTopics; tIndex++) {
             //writer.write("Topic" + new Integer(tIndex) + ":");
 
-            Map<Integer, Integer> wordCount = new TreeMap<Integer, Integer>();
+            Map<Integer, Double> wordCount = new TreeMap<Integer, Double>();
             for (int wIndex = 0; wIndex < vocabularySize; wIndex++) {
-                wordCount.put(wIndex, topicWordCount[tIndex][wIndex]);
+                wordCount.put(wIndex, phi[tIndex][wIndex]);
             }
             wordCount = FuncUtils.sortByValueDescending(wordCount);
 
             Set<Integer> mostLikelyWords = wordCount.keySet();
             int count = 0;
             for (Integer index : mostLikelyWords) {
-                if (count < topWords) {
-                    double pro = (topicWordCount[tIndex][index] + beta)
-                            / (sumTopicWordCount[tIndex] + betaSum);
-                    pro = Math.round(pro * 1000000.0) / 1000000.0;
+                if (count < topWords){
                     writer.write(id2WordVocabulary.get(index) + " ");
                     count += 1;
                 }
@@ -534,12 +468,27 @@ public class WNTM
     {
         BufferedWriter writer = new BufferedWriter(new FileWriter(folderPath
                 + expName + ".phi"));
-        for (int i = 0; i < numTopics; i++) {
+
+        double phiSum[] = new double[numTopics];
+        for (int k = 0; k < numTopics; k++) {
             for (int j = 0; j < vocabularySize; j++) {
-                double pro = (topicWordCount[i][j] + beta)
-                        / (sumTopicWordCount[i] + betaSum);
-                phi[i][j] = pro;
-                writer.write(pro + " ");
+                double pro = (pseudocTopicCount[j][k] + alpha)
+                        / (pseudo_corpus.get(j).size() + alphaSum);
+                phi[k][j] = pro;
+                phiSum[k] += pro;
+              //  writer.write(df.format(pro) + " ");
+            }
+            //writer.write("\n");
+        }
+        //writer.close();
+
+        for (int k = 0; k < numTopics; k++) {
+            for (int j = 0; j < vocabularySize; j++) {
+               // double pro = (pseudocTopicCount[j][k] + alpha)
+                 //       / (pseudo_corpus.get(j).size() + alphaSum);
+                phi[k][j] /= phiSum[k];
+                //phiSum[k] += pro;
+                writer.write(phi[k][j] + " ");
             }
             writer.write("\n");
         }
@@ -574,9 +523,13 @@ public class WNTM
     public void write()
             throws IOException
     {
-        writeTopTopicalWords();
+
         writeTopicWordPros();
+
+
         writeDocTopicPros();
+
+        writeTopTopicalWords();
 
         writeParameters();
     }
@@ -584,8 +537,8 @@ public class WNTM
     public static void main(String args[])
             throws Exception
     {
-        WNTM wntm = new WNTM("dataset/Pascal_Flickr.txt", 100, 0.1,
-                0.01, 1000, 10, 10, "Pascal_FlickrWNTM");
+        WNTM wntm = new WNTM("dataset/GoogleNews.txt", 152, 0.1,
+                0.01, 1000, 10, 10, "GoogleNewsWNTM");
         wntm.inference();
     }
 }
