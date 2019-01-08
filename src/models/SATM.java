@@ -432,6 +432,8 @@ public class SATM {
                     multiTopic[k] *= (V[word][k] + beta)
                             / (topicCnts[k] + betaSum);
                 }
+
+               // double pros = (shortDocTopicCnts[i][tIndex] + alpha)/(N_d[i]+numTopics*alpha);
             }
             multiTopic = FuncUtils.L1NormWithReusable(multiTopic);
 
@@ -535,7 +537,7 @@ public class SATM {
     public static void main(String args[])
             throws Exception
     {
-        SATM satm = new SATM("dataset/GoogleNews.txt", 152, 1000, 0.001, 0.1,
+        SATM satm = new SATM("dataset/GoogleNews.txt", 152, 500, 0.001, 0.1,
                 0.1, 1000, 10, "GoogleNewsSATM");
         satm.inference();
     }
