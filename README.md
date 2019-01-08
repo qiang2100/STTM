@@ -29,9 +29,9 @@ We provided the following six short text datasets for evaluation. The summary st
 
 | Dataset        | K    |  Num.  | Len.| V|
 | --------   | -----:   | :----: |:----: |:----: |
-| SearchSnippets        | 8 | 12,340 |17.88/38| 30,642|
-| StackOverflow        | 20 | 20,000 | 8.31/34 | 22,956 |
-| Biomedical        | 20 |20,000 |12.88/53 | 18,888 |
+| SearchSnippets        | 8 | 12,295 |14,4/37| 5,547|
+| StackOverflow        | 20 | 16,407 | 5.03/17 | 2638 |
+| Biomedical        | 20 | 19,448 | 7.44/28 | 4498 |
 | Tweet        | 89      |   2472    |   8.55/20 |  5098    |
 | GoogleNews        | 152      |   11,109    |  6.23/14  |    8110  |
 | Pascal_Flickr        | 20      |   4834    | 5.37/19    |    3431  |
