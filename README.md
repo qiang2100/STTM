@@ -169,7 +169,7 @@ Here, LDA_inf and DM_inf and LFLDA_inf and LFDMM_inf iare from jLDADMM package (
 
 ## Citation
 
-[STTM technical report](https://arxiv.org/abs/1808.02215)
+[STTM technical report](https://arxiv.org/abs/1904.07695v1)
 
 ```
 @article{qiang2018STTP,
