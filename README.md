@@ -175,7 +175,7 @@ Here, LDA_inf and DM_inf and LFLDA_inf and LFDMM_inf iare from jLDADMM package (
 @article{qiang2018STTP,
   title =  {Short Text Topic Modeling Techniques, Applications, and Performance: A Survey },
   author = {Qiang, Jipeng and 
-            Qian Zhenyu
+            Qian Zhenyu and
             Li, Yun and 
             Yuan, Yunhao and 
             Wu, Xindong},
