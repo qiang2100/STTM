@@ -173,14 +173,14 @@ Here, LDA_inf and DM_inf and LFLDA_inf and LFDMM_inf iare from jLDADMM package (
 
 ```
 @article{qiang2018STTP,
-  title =  {STTM: A Tool for Short Text Topic Modeling },
+  title =  {Short Text Topic Modeling Techniques, Applications, and Performance: A Survey },
   author = {Qiang, Jipeng and 
+            Qian Zhenyu
             Li, Yun and 
             Yuan, Yunhao and 
-            Liu, Wei and 
             Wu, Xindong},
-  journal = {arXiv preprint arXiv:1808.02215},
-  year  =  {2018}
+  journal = {arXiv preprint arXiv:1904.07695},
+  year  =  {2019}
 }
 ```
 
