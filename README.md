@@ -60,7 +60,7 @@ Challenge (Everingham et al., 2010). PAS includes twenty categories of images an
 * Topic coherence: Computing topic coherence, additional dataset (Wikipedia) as a single
 meta-document is needed to score word pairs using term cooccurrence in the paper (Automatic Evaluation of Topic Coherence). Here, we calculate the pointwise mutual
 information (PMI) of each word pair, estimated from the entire corpus of over one million English Wikipedia articles. Using a sliding window of 10-
-words to identify co-occurrence, we computed the PMI of all a given word pair. The wikipedia can downloaded [Here](https://dumps.wikimedia.org/enwiki/20180720/). Then, we can transfer the dataset from html to text using the [code](https://github.com/qiang2100/STTM/blob/master/process_wiki.py) through executing "python process_wiki.py enwiki-latest-pages-articles.xml.bz2 wiki.en.text". Finally, due to the large size, we only choose a part of them.
+words to identify co-occurrence, we computed the PMI of all a given word pair. The wikipedia can downloaded [Here](https://dumps.wikimedia.org/enwiki/). Then, we can transfer the dataset from html to text using the [code](https://github.com/qiang2100/STTM/blob/master/process_wiki.py) through executing "python process_wiki.py enwiki-latest-pages-articles.xml.bz2 wiki.en.text". Finally, due to the large size, we only choose a part of them.
 
 * Cluster Evaluation (Purity and NMI): By choosing the maximum of topic probability for each text, we can get the cluster label for each text. Then, we can compare the cluster label and the golden label using metric Purity and NMI.
 
