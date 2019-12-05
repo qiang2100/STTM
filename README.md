@@ -82,7 +82,7 @@ Users can find the pre-compiled file `STTM.jar` and source codes in folders `src
 !!! note "Note"
     If users train these models based word embeddings, users need to download the Pre-trained word embeddings. In the package, the code is based on [Global Vectors](https://nlp.stanford.edu/projects/glove/).
 
-    $ java [-Xmx1G] -jar jar/STTM.jar –model <GPUDMM or GPU-PDMM or LFDMM or LFLDA> -corpus <Input_corpus_file_path> -vectors <Input_Word2vec_file_Path> [-ntopics <int>] [-alpha <double>] [-beta <double>] [-niters <int>] [-twords <int>] [-name <String>] [-sstep <int>]
+    $ java [-Xmx1G] -jar jar/STTM.jar –model <GPUDMM or GPU_PDMM or LFDMM or LFLDA> -corpus <Input_corpus_file_path> -vectors <Input_Word2vec_file_Path> [-ntopics <int>] [-alpha <double>] [-beta <double>] [-niters <int>] [-twords <int>] [-name <String>] [-sstep <int>]
 
 where parameters in [ ] are optional. More parameters in different methods are shown in "src/utility/CmdArgs"
 
