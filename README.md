@@ -77,7 +77,7 @@ Users can find the pre-compiled file `STTM.jar` and source codes in folders `src
 
 **Now, we can train the algorithms in STTM tool by executing:**
 
-	$ java [-Xmx1G] -jar jar/STTM.jar –model <LDA or BTM or PTM or SATM or DMM or WATM> -corpus <Input_corpus_file_path> [-ntopics <int>] [-alpha <double>] [-beta <double>] [-niters <int>] [-twords <int>] [-name <String>] [-sstep <int>]
+	$ java [-Xmx1G] -jar jar/STTM.jar –model <LDA or BTM or PTM or SATM or DMM or WNTM> -corpus <Input_corpus_file_path> [-ntopics <int>] [-alpha <double>] [-beta <double>] [-niters <int>] [-twords <int>] [-name <String>] [-sstep <int>]
 
 !!! note "Note"
     If users train these models based word embeddings, users need to download the Pre-trained word embeddings. In the package, the code is based on [Global Vectors](https://nlp.stanford.edu/projects/glove/).
