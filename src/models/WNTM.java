@@ -272,7 +272,7 @@ public class WNTM
         {
             ArrayList<Integer> onePseudo = new ArrayList<Integer>();
 
-            for(int j=0; j<vocabularySize && j!=i; j++)
+            for(int j=0; j<vocabularySize; j++)
             {
                 if(wordNeighbor[i][j]==0)
                     continue;
